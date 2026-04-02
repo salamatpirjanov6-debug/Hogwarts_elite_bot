@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+import asyncio
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import (
@@ -10,6 +11,7 @@ from aiogram.types import (
     KeyboardButton, 
     ReplyKeyboardMarkup,
 )
+from aiogram.utils import exceptions
 
 # --- SOZLAMALAR ---
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85Lh_XFsc-2n0L8O956T8Xw68Y9NqE")
@@ -160,20 +162,37 @@ async def start_cmd(message: types.Message):
         return
     await message.answer(f"Xush kelibsiz {message.from_user.first_name}! Bo'limni tanlang:", reply_markup=main_menu())
 
+# --- YANGILANGAN SEND BUYRUG'I (XATOSIZ VA HAMMAGA) ---
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
     text = message.get_args()
     if not text:
-        await message.reply("Foydalanish: `/send xabar_matni`")
+        await message.reply("Foydalanish: `/send xabar_matni` yoki `/send` deb yozib pastidan xabarni yuboring.")
         return
+    
     users = load_data(USERS_FILE)
     count = 0
-    for uid in users:
+    blocked = 0
+    
+    status_msg = await message.answer(f"🚀 Xabar yuborish boshlandi (Jami: {len(users)} ta foydalanuvchi)...")
+    
+    for uid in list(users.keys()):
         try:
-            await bot.send_message(uid, text)
+            await bot.send_message(int(uid), text)
             count += 1
-        except: continue
-    await message.answer(f"Xabar {count} ta foydalanuvchiga yuborildi.")
+            # Telegram cheklovlariga tushib qolmaslik uchun biroz kutamiz
+            if count % 20 == 0:
+                await asyncio.sleep(0.5)
+        except exceptions.BotBlocked:
+            blocked += 1
+        except exceptions.ChatNotFound:
+            blocked += 1
+        except exceptions.UserDeactivated:
+            blocked += 1
+        except Exception:
+            continue
+            
+    await status_msg.edit_text(f"✅ Xabar yuborish yakunlandi!\n\n👥 Qabul qildi: {count}\n🚫 Botni bloklaganlar: {blocked}")
 
 @dp.message_handler(lambda m: m.text == "📚 Kitoblar")
 async def book_menu_btn(message: types.Message):
@@ -221,7 +240,6 @@ async def callback_handler(callback: types.CallbackQuery):
         await callback.message.delete()
         await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
 
-    # --- KITOB BO'LIMLARI ---
     elif callback.data == "lang_book_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_UZ): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_uz_{i}"))
@@ -240,7 +258,6 @@ async def callback_handler(callback: types.CallbackQuery):
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("📚 Hammasi birda:", reply_markup=btn)
 
-    # --- KINO BO'LIMLARI ---
     elif callback.data == "lang_movie_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_UZ): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_uz_{i}"))
@@ -256,10 +273,10 @@ async def callback_handler(callback: types.CallbackQuery):
     elif callback.data == "lang_movie_en":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_EN): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_en_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
+        btn.add(InlineKeyboardButton("⬅ ...
+... Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("🇬🇧 English Movies:", reply_markup=btn)
 
-    # --- FAYL YUBORISH MANTIQI ---
     elif callback.data.startswith("bk_"):
         _, lang, idx = callback.data.split("_")
         idx = int(idx)
@@ -278,3 +295,4 @@ async def callback_handler(callback: types.CallbackQuery):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
+    
