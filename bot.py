@@ -18,7 +18,7 @@ GROUP = "@hogwarts_elite"
 ADMIN_ID = 7670992727
 
 if not API_TOKEN:
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+    TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 
 logging.basicConfig(level=logging.INFO)
