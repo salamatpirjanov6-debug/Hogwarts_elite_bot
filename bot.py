@@ -30,7 +30,9 @@ USERS_FILE = "bot_users.json"
 
 def load_data(file):
     if os.path.exists(file):
-        with open(file, "r") as f: return json.load(f)
+        try:
+            with open(file, "r") as f: return json.load(f)
+        except: return {}
     return {}
 
 def save_data(file, data):
@@ -42,7 +44,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- 1. KITOOBLAR BAZASI ---
+# --- MA'LUMOTLAR BAZASI (KITOB VA KINOLAR) ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
@@ -50,7 +52,7 @@ BOOKS_UZ = [
     {"name": "📖 4. Otashli jom", "file_id": "BQACAgIAAxkBAANnacuwaXcFuxDS8ll0QQ8YYgjxNxcAAjMAAwSsEEoCrCr_9txjwDoE"},
     {"name": "📖 5. Kaknus ordeni", "file_id": "BQACAgIAAxkBAANpacuwkFa_xAhxOPRwz6_O5mhZzkMAAmsAA-A7GEoe0fZOrviJXjoE"},
     {"name": "📖 6. Chalazot shaxzoda", "file_id": "BQACAgIAAxkBAANracuwqVy7l3UaOeEsHvDN8DYyYK4AApIAAzXcUEotF3tao-vWxToE"},
-    {"name": "📖 7. Ajal tuhfalari", "file_id": "BQACAgIAAxkBAANtacuwwS1FlLl5SubbQJDSn6ghyyoAAg8CAAKpCIBJRzBcQ4IMdzA6BA"},
+    {"name": "📖 7. Ajal tuhfalari", "file_id": "BQACAgIAAxkBAANtacuwwS1FlLl5SubbQJDSn6ghyyoAAg8CAAKpCIBJRzBcQ4IMdzA6BA"}
 ]
 
 BOOKS_EN = [
@@ -60,14 +62,9 @@ BOOKS_EN = [
     {"name": "📖 4. Goblet of Fire", "file_id": "BQACAgUAAxkBAAIDP2nOlAzIskBV4m7d6OgD3G1o2FOEAAL7AwACn_N4VdM2NXmcWgR-OgQ"},
     {"name": "📖 5. Order of the Phoenix", "file_id": "BQACAgUAAxkBAAIDQWnOlB5zRwpHT1wOS9diXcxjCcogAAL5AwACn_N4VQGCfrTny6GKOgQ"},
     {"name": "📖 6. Half-Blood Prince", "file_id": "BQACAgUAAxkBAAIDQ2nOlDGDPZqe9r1QZbUUJDj4-L0UAAL6AwACn_N4VWeuyWoTm2SnOgQ"},
-    {"name": "📖 7. Deathly Hallows", "file_id": "BQACAgUAAxkBAAIDRWnOlEOi6oyRRafs-Y9Yl1Lo19fjAAL8AwACn_N4VdOVKXxjV5MlOgQ"},
+    {"name": "📖 7. Deathly Hallows", "file_id": "BQACAgUAAxkBAAIDRWnOlEOi6oyRRafs-Y9Yl1Lo19fjAAL8AwACn_N4VdOVKXxjV5MlOgQ"}
 ]
 
-BOOKS_ALL = [
-    {"name": "📚 All Books (1-7)", "file_id": "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ"}
-]
-
-# --- 2. KINOLAR BAZASI ---
 MOVIES_UZ = [
     {"name": "🎬 1. Hikmatlar toshi", "file_id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA"},
     {"name": "🎬 2. Maxfiy hujra", "file_id": "BAACAgIAAxkBAAOFacu0BPXsr3WF3yYGmJHdjVeDjSMAAmSFAALhnOhKpL77RQyPlaE6BA"},
@@ -76,7 +73,7 @@ MOVIES_UZ = [
     {"name": "🎬 5. Feniks jamiyati", "file_id": "BAACAgIAAxkBAAOHacu0W-SHgaTmaKyMu7N7S4D-9NQAAn6FAALhnOhKpYQqLyzBd-k6BA"},
     {"name": "🎬 6. Tilsim Shahzoda", "file_id": "BAACAgIAAxkBAAONacu1kktAejSVYq9GM3xmHXGzrfAAAoyFAALhnOhKrgZBW8bL1Ws6BA"},
     {"name": "🎬 7. Ajal tuhfasi 1", "file_id": "BAACAgIAAxkBAAOPacu1qaZL-FLQaWMNmAbS1P6B-DUAApeFAALhnOhKF_fANiYvpAk6BA"},
-    {"name": "🎬 8. Ajal tuhfalari 2", "file_id": "BAACAgIAAxkBAAOJacu1AoUKWQUInEPM0DGXvSZhueUAAqmFAALhnOhKZfF9wiu0Drs6BA"},
+    {"name": "🎬 8. Ajal tuhfalari 2", "file_id": "BAACAgIAAxkBAAOJacu1AoUKWQUInEPM0DGXvSZhueUAAqmFAALhnOhKZfF9wiu0Drs6BA"}
 ]
 
 MOVIES_RU = [
@@ -87,27 +84,15 @@ MOVIES_RU = [
     {"name": "🎬 5. Орден Феникса", "file_id": "BAACAgQAAxkBAAIDUWnOlhMJxYJ_yWbXZLJ25ZPTS0JJAAKgDAAC2L_JULzvFz_NQdPnOgQ"},
     {"name": "🎬 6. Принц-полукровка", "file_id": "BAACAgIAAxkBAAIDU2nOliUy9hL1ssJ5e-kORyqEL5DgAAIlCgACMf9ZS2Yi3TnE3abiOgQ"},
     {"name": "🎬 7. Дары Смерти 1", "file_id": "BAACAgIAAxkBAAIDVWnOljREOEjf4v0o0Sz2DHs1Zm3xAALpBAACKP2pSAiPJCewUqfUOgQ"},
-    {"name": "🎬 8. Дары Смерти 2", "file_id": "BAACAgIAAxkBAAIDV2nOlkSVUkDW2WL6f4WrUmapIQABcQACZQQAAsSsoUjP9fxCTDgDNzoE"},
+    {"name": "🎬 8. Дары Смерти 2", "file_id": "BAACAgIAAxkBAAIDV2nOlkSVUkDW2WL6f4WrUmapIQABcQACZQQAAsSsoUjP9fxCTDgDNzoE"}
 ]
 
-MOVIES_EN = [
-    {"name": "🎬 1. Sorcerer's Stone", "file_id": "BAACAgQAAxkBAAIDWWnOltDBBkgHlm6EC5zZ1__vemdSAAJ_BwACrMaBUKRYUpDTm11oOgQ"},
-    {"name": "🎬 2. Chamber of Secrets", "file_id": "BAACAgQAAxkBAAIDW2nOlynvMgKOoF9hn7r8CcccUZo-AAKBBwACrMaBUM7959H4o01HOgQ"},
-    {"name": "🎬 3. Prisoner of Azkaban", "file_id": "BAACAgQAAxkBAAIDXWnOlz4dtzVGjgW6u9JUz1frSKKNAAKHBwACrMaBUKP9MbVImI-uOgQ"},
-    {"name": "🎬 4. Goblet of Fire", "file_id": "BAACAgQAAxkBAAIDX2nOl0-8b1wOF8VhdnLiVTmx2lQ0AAKOBwACrMaBUNmv6Ega62iuOgQ"},
-    {"name": "🎬 5. Order of the Phoenix", "file_id": "BAACAgQAAxkBAAIDYWnOl1-UJIPeUi9iwkH5xveOb1cBAAKVBwACrMaBUC7iNQH-PQokOgQ"},
-    {"name": "🎬 6. Half-Blood Prince", "file_id": "BAACAgQAAxkBAAIDY2nOl28ipXgwucm7uiCsJ00NrHObAAKNCAACqwKBUHgSmGHyOYgROgQ"},
-    {"name": "🎬 7. Deathly Hallows 1", "file_id": "BAACAgQAAxkBAAIDZWnOl36nQLjV7TlugAMlJE6y1xFKAAKXCAACqwKBUMiAIxlbsJmOOgQ"},
-    {"name": "🎬 8. Deathly Hallows 2", "file_id": "BAACAgQAAxkBAAIDZ2nOl41aUWcgKRzzP_r-suInRRSKAAKkCAACqwKBUC733-s2FjB3OgQ"},
-]
-
-# --- SHLYAPA GAPLARI ---
 SORTING_MESSAGES = [
-    "🤔 *Hmmm... qiyin, juda qiyin.* \nKo'ryapman, bu yerda aql ham yetarli, iste'dod ham... va-a-ay, qanday ulkan xohish!",
-    "🧐 *Iye, bu qanday sirli qalb?* \nAql bovar qilmaydigan jasorat, biroz makr... Ha, sen Hogvarts tarixini o'zgartira olasan!",
-    "💭 *E-eh, men ko'ryapman...* \nSadoqat senda birinchi o'rinda. Mehnat qilishdan qo'rqmaysan, do'stlaring uchun joningni berishga tayyorsan.",
-    "🐍 *Qiziq, juda qiziq...* \nShon-shuhratga bo'lgan chanqoqlik, aqlli munosabat. Ha, sen buyuklikka loyiqsan!",
-    "🦁 *Bu yerda nima bor?* \nYuraging to'la qo'rqmaslik. Sen xavf-xatarga tik boqishni bilasan. Ha, jasurlik sening qoningda!"
+    "🤔 *Hmmm... qiyin, juda qiyin.* \nKo'ryapman, bu yerda aql ham yetarli, iste'dod ham...",
+    "🧐 *Iye, bu qanday sirli qalb?* \nJasorat, biroz makr... Ha, sen Hogvarts tarixini o'zgartirasan!",
+    "💭 *E-eh, men ko'ryapman...* \nSadoqat senda birinchi o'rinda. Mehnatdan qo'rqmaysan.",
+    "🐍 *Qiziq, juda qiziq...* \nShon-shuhratga chanqoqlik. Ha, sen buyuklikka loyiqsan!",
+    "🦁 *Bu yerda nima bor?* \nYuraging to'la qo'rqmaslik. Jasurlik sening qoningda!"
 ]
 
 # --- MENYULAR ---
@@ -122,7 +107,6 @@ def book_lang_menu():
     btn.add(
         InlineKeyboardButton("🇺🇿 O'zbek tili", callback_data="lang_book_uz"),
         InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="lang_book_en"),
-        InlineKeyboardButton("📚 Hammasi birda", callback_data="lang_book_all"),
         InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main")
     )
     return btn
@@ -132,12 +116,10 @@ def movie_lang_menu():
     btn.add(
         InlineKeyboardButton("🇺🇿 O'zbek tili", callback_data="lang_movie_uz"),
         InlineKeyboardButton("🇷🇺 Rus tili", callback_data="lang_movie_ru"),
-        InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="lang_movie_en"),
         InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main")
     )
     return btn
 
-houses_dict = {"Slytherin": "ilon", "Hufflepuff": "aql", "Ravenclaw": "burgut", "Gryffindor": "jasorat"}
 ACTIVE_STATUSES = {"creator", "administrator", "member", "restricted"}
 
 async def check_sub(user_id):
@@ -147,7 +129,7 @@ async def check_sub(user_id):
         return m_ch.status in ACTIVE_STATUSES, m_gr.status in ACTIVE_STATUSES
     except: return False, False
 
-# --- HANDLERLAR ---
+# --- ASOSIY HANDLERLAR ---
 
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
@@ -160,79 +142,89 @@ async def start_cmd(message: types.Message):
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         await message.answer("❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
         return
-    await message.answer(f"Xush kelibsiz {message.from_user.first_name}! Bo'limni tanlang:", reply_markup=main_menu())
+    await message.answer(f"Xush kelibsiz! Bo'limni tanlang:", reply_markup=main_menu())
 
+# --- KUCHAYTIRILGAN SEND BUYRUG'I ---
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
     text = message.get_args()
-    if not text:
-        await message.reply("Foydalanish: `/send xabar_matni`")
+    reply = message.reply_to_message
+    
+    if not text and not reply:
+        await message.reply("Foydalanish: `/send matn` yoki xabarga reply qilib `/send` deb yozing.")
         return
     
     users = load_data(USERS_FILE)
-    count = 0
-    blocked = 0
+    u_list = list(users.keys())
+    total = len(u_list)
     
-    status_msg = await message.answer(f"🚀 Xabar yuborish boshlandi...")
+    status_msg = await message.answer(f"🚀 {total} ta foydalanuvchiga yuborish boshlandi...")
     
-    for uid in list(users.keys()):
+    count, blocked, errors = 0, 0, 0
+
+    for uid in u_list:
         try:
-            await bot.send_message(int(uid), text)
+            if reply:
+                await reply.copy_to(int(uid))
+            else:
+                await bot.send_message(int(uid), text)
+            
             count += 1
-            if count % 20 == 0:
-                await asyncio.sleep(0.5)
+            
+            # 10 ta xabardan keyin nafas rostlash
+            if count % 10 == 0:
+                await asyncio.sleep(1.5)
+                
         except exceptions.BotBlocked:
             blocked += 1
         except Exception:
-            continue
+            errors += 1
             
-    await status_msg.edit_text(f"✅ Yakunlandi!\n\n👥 Qabul qildi: {count}\n🚫 Bloklaganlar: {blocked}")
+    await status_msg.edit_text(
+        f"✅ **Yakunlandi!**\n\n"
+        f"👥 Jami: {total}\n"
+        f"✅ Yetkazildi: {count}\n"
+        f"🚫 Bloklagan: {blocked}\n"
+        f"❌ Xatolik: {errors}",
+        parse_mode="Markdown"
+    )
 
 @dp.message_handler(lambda m: m.text == "📚 Kitoblar")
 async def book_menu_btn(message: types.Message):
-    if not (await check_sub(message.from_user.id))[0]: return await start_cmd(message)
-    await message.answer("Kitoblar uchun tilni tanlang:", reply_markup=book_lang_menu())
+    await message.answer("Tilni tanlang:", reply_markup=book_lang_menu())
 
 @dp.message_handler(lambda m: m.text == "🎬 Kinolar")
 async def movie_menu_btn(message: types.Message):
-    if not (await check_sub(message.from_user.id))[0]: return await start_cmd(message)
-    await message.answer("Kinolar uchun tilni tanlang:", reply_markup=movie_lang_menu())
+    await message.answer("Tilni tanlang:", reply_markup=movie_lang_menu())
 
 @dp.message_handler(lambda m: m.text == "🎩 Saralovchi shlyapa")
 async def sorting_hat(message: types.Message):
-    if not (await check_sub(message.from_user.id))[0]: return await start_cmd(message)
     uid = str(message.from_user.id)
     data = load_data(HOUSES_FILE)
-    intro_text = random.choice(SORTING_MESSAGES)
+    houses = ["Gryffindor", "Slytherin", "Ravenclaw", "Hufflepuff"]
     if uid not in data:
-        fname = random.choice(list(houses_dict.keys()))
-        data[uid] = fname
+        data[uid] = random.choice(houses)
         save_data(HOUSES_FILE, data)
-    fname = data[uid]
-    key_word = houses_dict[fname]
-    house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
-    h_emoji = house_emojis[fname]
-    text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {h_emoji} **{fname}** {h_emoji}\n\n"
-            f"🔑 Kalit so'zi: `{key_word}`\n\n*(Nusxa olish uchun ustiga bosing)*\nKalit so'zni shlyapaga yuboring 👇")
-    btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapa bilan bog'lanish", url=f"https://t.me/{SHLYAPA_USER}"))
+    
+    h_name = data[uid]
+    text = f"{random.choice(SORTING_MESSAGES)}\n\n✨ Sizning fakultetingiz: **{h_name}**!"
+    btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapa bilan gaplashish", url=f"https://t.me/{SHLYAPA_USER}"))
     await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
     uid = callback.message.chat.id
-    user_name = callback.from_user.first_name
     
     if callback.data == "check_sub_status":
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
             await callback.message.delete()
-            await bot.send_message(uid, f"Tabriklaymiz {user_name}, botdan foydalanishingiz mumkin. 🎉", reply_markup=main_menu())
+            await bot.send_message(uid, "Xush kelibsiz!", reply_markup=main_menu())
         else:
             await callback.answer("Obuna bo'lmagansiz!", show_alert=True)
 
     elif callback.data == "back_to_main":
-        await callback.message.delete()
-        await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
+        await callback.message.edit_text("Asosiy menyu:", reply_markup=main_menu())
 
     elif callback.data == "lang_book_uz":
         btn = InlineKeyboardMarkup(row_width=1)
@@ -240,17 +232,9 @@ async def callback_handler(callback: types.CallbackQuery):
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("🇺🇿 O'zbekcha kitoblar:", reply_markup=btn)
 
-    elif callback.data == "lang_book_en":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, b in enumerate(BOOKS_EN): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_en_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇬🇧 English Books:", reply_markup=btn)
-
-    elif callback.data == "lang_book_all":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, b in enumerate(BOOKS_ALL): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_all_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("📚 Hammasi birda:", reply_markup=btn)
+    elif callback.data.startswith("bk_uz_"):
+        idx = int(callback.data.split("_")[-1])
+        await bot.send_document(uid, BOOKS_UZ[idx]["file_id"], caption=BOOKS_UZ[idx]["name"])
 
     elif callback.data == "lang_movie_uz":
         btn = InlineKeyboardMarkup(row_width=1)
@@ -258,34 +242,11 @@ async def callback_handler(callback: types.CallbackQuery):
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("🇺🇿 O'zbekcha kinolar:", reply_markup=btn)
 
-    elif callback.data == "lang_movie_ru":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, m in enumerate(MOVIES_RU): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_ru_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇷🇺 Русские фильмы:", reply_markup=btn)
-
-    elif callback.data == "lang_movie_en":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, m in enumerate(MOVIES_EN): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_en_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇬🇧 English Movies:", reply_markup=btn)
-
-    elif callback.data.startswith("bk_"):
-        _, lang, idx = callback.data.split("_")
-        idx = int(idx)
-        if lang == "uz": await bot.send_document(uid, BOOKS_UZ[idx]["file_id"], caption=BOOKS_UZ[idx]["name"])
-        elif lang == "en": await bot.send_document(uid, BOOKS_EN[idx]["file_id"], caption=BOOKS_EN[idx]["name"])
-        elif lang == "all": await bot.send_document(uid, BOOKS_ALL[idx]["file_id"], caption=BOOKS_ALL[idx]["name"])
-
-    elif callback.data.startswith("mv_"):
-        _, lang, idx = callback.data.split("_")
-        idx = int(idx)
-        if lang == "uz": await bot.send_video(uid, MOVIES_UZ[idx]["file_id"], caption=MOVIES_UZ[idx]["name"])
-        elif lang == "ru": await bot.send_video(uid, MOVIES_RU[idx]["file_id"], caption=MOVIES_RU[idx]["name"])
-        elif lang == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"], caption=MOVIES_EN[idx]["name"])
+    elif callback.data.startswith("mv_uz_"):
+        idx = int(callback.data.split("_")[-1])
+        await bot.send_video(uid, MOVIES_UZ[idx]["file_id"], caption=MOVIES_UZ[idx]["name"])
 
     await callback.answer()
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
-    
