@@ -377,7 +377,7 @@ async def hat_group(message: types.Message):
         kw = HOUSE_KEYWORDS[saved]
         await message.reply(f"🎩 Fakultet: {saved}\n\n🔑 Kalit so'z: <code>{kw}</code>", parse_mode="HTML", reply_markup=btn)
 
-else:
+    else:
         result = random.choice(houses)
         save_house(uid, result)
         kw = HOUSE_KEYWORDS[result]
