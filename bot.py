@@ -5,18 +5,17 @@ import random
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import (
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    KeyboardButton,
+    InlineKeyboardButton, 
+    InlineKeyboardMarkup, 
+    KeyboardButton, 
     ReplyKeyboardMarkup,
 )
 
 # --- SOZLAMALAR ---
-# Railway-da Environments bo'limiga TELEGRAM_BOT_TOKEN qo'shishni unutmang
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85Lh_XFsc-2n0L8O956T8Xw68Y9NqE")
 CHANNEL = "@harry_potter_fans_uz"
 GROUP = "@hogwarts_elite"
-ADMIN_ID = 7670992727 # Sizning IDgiz
+ADMIN_ID = 7670992727
 SHLYAPA_USER = "elite_shlyapa"
 
 logging.basicConfig(level=logging.INFO)
@@ -41,7 +40,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- FAYL IDlar (O'zgarishsiz qoldi) ---
+# --- FAYL IDlar ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
@@ -65,7 +64,7 @@ MOVIES_UZ = [
     {"name": "🎬 8. Ajal tuhfalari 2", "file_id": "BAACAgIAAxkBAAOJacu1AoUKWQUInEPM0DGXvSZhueUAAqmFAALhnOhKZfF9wiu0Drs6BA"},
 ]
 
-# --- SHLYAPA GAPLARI (YANGI ✨) ---
+# --- SHLYAPA GAPLARI ---
 SORTING_MESSAGES = [
     "🤔 *Hmmm... qiyin, juda qiyin.* \nKo'ryapman, bu yerda aql ham yetarli, iste'dod ham... va-a-ay, qanday ulkan xohish!",
     "🧐 *Iye, bu qanday sirli qalb?* \nAql bovar qilmaydigan jasorat, biroz makr... Ha, sen Hogvarts tarixini o'zgartira olasan!",
@@ -74,7 +73,7 @@ SORTING_MESSAGES = [
     "🦁 *Bu yerda nima bor?* \nYuraging to'la qo'rqmaslik. Sen xavf-xatarga tik boqishni bilasan. Ha, jasurlik sening qoningda!"
 ]
 
-# --- MENYULAR (O'zgarishsiz) ---
+# --- MENYULAR ---
 def main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(KeyboardButton("📚 Kitoblar"), KeyboardButton("🎬 Kinolar"))
@@ -85,7 +84,9 @@ def book_lang_menu():
     btn = InlineKeyboardMarkup(row_width=1)
     btn.add(
         InlineKeyboardButton("🇺🇿 O'zbek tili", callback_data="lang_book_uz"),
-        InlineKeyboardButton("➡️ Orqaga", callback_data="back_to_main")
+        InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="lang_book_en"),
+        InlineKeyboardButton("📚 Hammasi birda", callback_data="lang_book_all"),
+        InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main")
     )
     return btn
 
@@ -93,17 +94,13 @@ def movie_lang_menu():
     btn = InlineKeyboardMarkup(row_width=1)
     btn.add(
         InlineKeyboardButton("🇺🇿 O'zbek tili", callback_data="lang_movie_uz"),
-        InlineKeyboardButton("➡️ Orqaga", callback_data="back_to_main")
+        InlineKeyboardButton("🇷🇺 Rus tili", callback_data="lang_movie_ru"),
+        InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="lang_movie_en"),
+        InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main")
     )
     return btn
 
-# --- LOGIKA ---
-houses_dict = {
-    "Slytherin": "ilon",
-    "Hufflepuff": "aql",
-    "Ravenclaw": "burgut",
-    "Gryffindor": "jasorat"
-}
+houses_dict = {"Slytherin": "ilon", "Hufflepuff": "aql", "Ravenclaw": "burgut", "Gryffindor": "jasorat"}
 ACTIVE_STATUSES = {"creator", "administrator", "member", "restricted"}
 
 async def check_sub(user_id):
@@ -119,7 +116,6 @@ async def check_sub(user_id):
 async def start_cmd(message: types.Message):
     register_user(message.from_user.id)
     in_ch, in_gr = await check_sub(message.from_user.id)
-    
     if not in_ch or not in_gr:
         btn = InlineKeyboardMarkup(row_width=1)
         if not in_ch: btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
@@ -127,17 +123,14 @@ async def start_cmd(message: types.Message):
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         await message.answer("❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
         return
-    
-    await message.answer(f"Xush kelibsiz, sehrgar {message.from_user.first_name}! Bo'limni tanlang:", reply_markup=main_menu())
+    await message.answer(f"Xush kelibsiz {message.from_user.first_name}! Bo'limni tanlang:", reply_markup=main_menu())
 
-# --- ADMIN REKLAMA ---
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
     text = message.get_args()
     if not text:
         await message.reply("Foydalanish: `/send xabar_matni`")
         return
-    
     users = load_data(USERS_FILE)
     count = 0
     for uid in users:
@@ -145,9 +138,8 @@ async def send_ads(message: types.Message):
             await bot.send_message(uid, text)
             count += 1
         except: continue
-    await message.answer(f"📢 Xabar {count} ta sehrgarga yuborildi!")
+    await message.answer(f"Xabar {count} ta foydalanuvchiga yuborildi.")
 
-# --- MENYU HANDLERLARI (FIXED) ---
 @dp.message_handler(lambda m: m.text == "📚 Kitoblar")
 async def book_menu_btn(message: types.Message):
     if not (await check_sub(message.from_user.id))[0]: return await start_cmd(message)
@@ -158,60 +150,37 @@ async def movie_menu_btn(message: types.Message):
     if not (await check_sub(message.from_user.id))[0]: return await start_cmd(message)
     await message.answer("Kinolar uchun tilni tanlang:", reply_markup=movie_lang_menu())
 
-# --- SHLYAPA (YANGILANGAN ✨) ---
 @dp.message_handler(lambda m: m.text == "🎩 Saralovchi shlyapa")
 async def sorting_hat(message: types.Message):
     if not (await check_sub(message.from_user.id))[0]: return await start_cmd(message)
-    
     uid = str(message.from_user.id)
     data = load_data(HOUSES_FILE)
-    
-    # Kinodagi shlyapa gaplaridan tasodifiy tanlash
     intro_text = random.choice(SORTING_MESSAGES)
-    
     if uid not in data:
-        # Yangi foydalanuvchi bo'lsa, fakultet tanlash
         fname = random.choice(list(houses_dict.keys()))
         data[uid] = fname
         save_data(HOUSES_FILE, data)
-    
-    # Saqlangan fakultetni olish
     fname = data[uid]
     key_word = houses_dict[fname]
-    
-    # Fakultetga mos emoji va tasvirlar
-    house_details = {
-        "Slytherin": {"emoji": "🐍", "color": "Yashil"},
-        "Hufflepuff": {"emoji": "🦡", "color": "Sariq"},
-        "Ravenclaw": {"emoji": "🦅", "color": "Ko'k"},
-        "Gryffindor": {"emoji": "🦁", "color": "Qizil"}
-    }
-    
-    h_emoji = house_details[fname]["emoji"]
-    
-    # Yakuniy chiroyli matn
-    text = (f"{intro_text}\n\n"
-            f"✨ Hamma narsa ayon! ✨\n\n"
-            f"Sizning fakultetingiz: {h_emoji} **{fname}** {h_emoji}\n\n"
-            f"🔑 Kalit so'zi: `{key_word}`\n\n"
-            f"*(Nusxa olish uchun kalit so'z ustiga bosing)*\n"
-            f"Kalit so'zni shlyapaga yuboring 👇")
-    
+    house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
+    h_emoji = house_emojis[fname]
+    text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {h_emoji} **{fname}** {h_emoji}\n\n"
+            f"🔑 Kalit so'zi: `{key_word}`\n\n*(Nusxa olish uchun ustiga bosing)*\nKalit so'zni shlyapaga yuboring 👇")
     btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapa bilan bog'lanish", url=f"https://t.me/{SHLYAPA_USER}"))
     await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
-# --- CALLBACKLAR (O'zgarishsiz) ---
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
     uid = callback.message.chat.id
+    user_name = callback.from_user.first_name
     
     if callback.data == "check_sub_status":
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
             await callback.message.delete()
-            await bot.send_message(uid, "Tabriklaymiz! Endi botdan foydalanishingiz mumkin. 🎉", reply_markup=main_menu())
+            await bot.send_message(uid, f"Tabriklaymiz {user_name}, endi botdan foydalanishingiz mumkin. 🎉", reply_markup=main_menu())
         else:
-            await callback.answer("❗ Siz hali obuna bo'lmagansiz, iltimos qayta urinib ko'ring!", show_alert=True)
+            await callback.answer("Siz hali obuna bo'lmagansiz!", show_alert=True)
 
     elif callback.data == "back_to_main":
         await callback.message.delete()
@@ -228,6 +197,10 @@ async def callback_handler(callback: types.CallbackQuery):
         for i, m in enumerate(MOVIES_UZ): btn.add(InlineKeyboardButton(m["name"], callback_data=f"uzm_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("🇺🇿 O'zbekcha kinolar:", reply_markup=btn)
+    
+    # Qolgan menyular uchun placeholder (Hali fayl IDlari yo'qligi uchun)
+    elif callback.data in ["lang_book_en", "lang_book_all", "lang_movie_ru", "lang_movie_en"]:
+        await callback.answer("Bu bo'lim tez kunda qo'shiladi! ⏳", show_alert=True)
 
     elif callback.data.startswith("uzb_"):
         idx = int(callback.data.split("_")[1])
@@ -240,4 +213,3 @@ async def callback_handler(callback: types.CallbackQuery):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
-    
