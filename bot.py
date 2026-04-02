@@ -233,7 +233,7 @@ async def movies_menu(message: types.Message):
             InlineKeyboardButton("🇷🇺 Rus tili", callback_data="movie_lang_ru"))
 
 btn.add(InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="movie_lang_en"))
-    btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_main"))
+btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_main"))
     await message.answer("🎬 Kino tilini tanlang:", reply_markup=btn)
 
 @dp.callback_query_handler(lambda c: c.data == "book_lang_uz")
