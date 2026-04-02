@@ -162,37 +162,31 @@ async def start_cmd(message: types.Message):
         return
     await message.answer(f"Xush kelibsiz {message.from_user.first_name}! Bo'limni tanlang:", reply_markup=main_menu())
 
-# --- YANGILANGAN SEND BUYRUG'I (XATOSIZ VA HAMMAGA) ---
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
     text = message.get_args()
     if not text:
-        await message.reply("Foydalanish: `/send xabar_matni` yoki `/send` deb yozib pastidan xabarni yuboring.")
+        await message.reply("Foydalanish: `/send xabar_matni`")
         return
     
     users = load_data(USERS_FILE)
     count = 0
     blocked = 0
     
-    status_msg = await message.answer(f"🚀 Xabar yuborish boshlandi (Jami: {len(users)} ta foydalanuvchi)...")
+    status_msg = await message.answer(f"🚀 Xabar yuborish boshlandi...")
     
     for uid in list(users.keys()):
         try:
             await bot.send_message(int(uid), text)
             count += 1
-            # Telegram cheklovlariga tushib qolmaslik uchun biroz kutamiz
             if count % 20 == 0:
                 await asyncio.sleep(0.5)
         except exceptions.BotBlocked:
             blocked += 1
-        except exceptions.ChatNotFound:
-            blocked += 1
-        except exceptions.UserDeactivated:
-            blocked += 1
         except Exception:
             continue
             
-    await status_msg.edit_text(f"✅ Xabar yuborish yakunlandi!\n\n👥 Qabul qildi: {count}\n🚫 Botni bloklaganlar: {blocked}")
+    await status_msg.edit_text(f"✅ Yakunlandi!\n\n👥 Qabul qildi: {count}\n🚫 Bloklaganlar: {blocked}")
 
 @dp.message_handler(lambda m: m.text == "📚 Kitoblar")
 async def book_menu_btn(message: types.Message):
@@ -232,9 +226,9 @@ async def callback_handler(callback: types.CallbackQuery):
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
             await callback.message.delete()
-            await bot.send_message(uid, f"Tabriklaymiz {user_name}, endi botdan foydalanishingiz mumkin. 🎉", reply_markup=main_menu())
+            await bot.send_message(uid, f"Tabriklaymiz {user_name}, botdan foydalanishingiz mumkin. 🎉", reply_markup=main_menu())
         else:
-            await callback.answer("Siz hali obuna bo'lmagansiz!", show_alert=True)
+            await callback.answer("Obuna bo'lmagansiz!", show_alert=True)
 
     elif callback.data == "back_to_main":
         await callback.message.delete()
@@ -273,8 +267,7 @@ async def callback_handler(callback: types.CallbackQuery):
     elif callback.data == "lang_movie_en":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_EN): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_en_{i}"))
-        btn.add(InlineKeyboardButton("⬅ ...
-... Orqaga", callback_data="back_to_main"))
+        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("🇬🇧 English Movies:", reply_markup=btn)
 
     elif callback.data.startswith("bk_"):
