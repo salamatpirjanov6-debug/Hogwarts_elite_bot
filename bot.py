@@ -1,4 +1,3 @@
-
 import json
 import logging
 import os
@@ -19,13 +18,14 @@ GROUP = "@hogwarts_elite"
 ADMIN_ID = 7670992727
 
 if not API_TOKEN:
-    raise ValueError("TELEGRAM_BOT_TOKEN environment variable is not set!")
+    raise ValueError("TELEGRAM_BOT_TOKEN muhit o'zgaruvchisi o'rnatilmagan!")
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
+# --- MA'LUMOTLAR ---
 BOOKS = [
     {"name": "📖 1. Garri Potter va Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
     {"name": "📖 2. Garri Potter va Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
@@ -83,9 +83,9 @@ MOVIES_EN = [
     {"name": "🎬 8. Harry Potter and the Deathly Hallows Part 2", "file_id": "BAACAgQAAxkBAAIB3GnM2zY1caRIbVzD1WtN5O4zKYoFAAKkCAACqwKBUC733-s2FjB3OgQ"},
 ]
 
+# --- SOZLAMALAR ---
 menu = ReplyKeyboardMarkup(resize_keyboard=True)
-menu.add(KeyboardButton("📚 Kitob"))
-menu.add(KeyboardButton("🎬 Kino"))
+menu.add(KeyboardButton("📚 Kitob"), KeyboardButton("🎬 Kino"))
 menu.add(KeyboardButton("🎩 Saralovchi shlyapa"))
 
 houses = ["🦁 Gryffindor", "🐍 Slytherin", "🦡 Hufflepuff", "🦅 Ravenclaw"]
@@ -97,8 +97,10 @@ HOUSE_KEYWORDS = {
 }
 ACTIVE_STATUSES = {"creator", "administrator", "member", "restricted"}
 
-USERS_FILE = os.path.join(os.path.dirname(file), "users.json")
+USERS_FILE = "users.json"
+HOUSES_FILE = "user_houses.json"
 
+# --- FUNKSIYALAR ---
 def load_users():
     if os.path.exists(USERS_FILE):
         with open(USERS_FILE, "r") as f:
@@ -115,8 +117,6 @@ def save_user(user_id):
 def get_all_users():
     return load_users()
 
-HOUSES_FILE = os.path.join(os.path.dirname(file), "user_houses.json")
-
 def load_houses():
     if os.path.exists(HOUSES_FILE):
         with open(HOUSES_FILE, "r") as f:
@@ -132,34 +132,29 @@ def save_house(user_id, house):
 def get_user_house(user_id):
     return load_houses().get(str(user_id))
 
-async def check_channel(user_id):
-    try:
-        member = await bot.get_chat_member(CHANNEL, user_id)
-        return member.status in ACTIVE_STATUSES
-    except:
-        return False
-
-async def check_group(user_id):
-    try:
-        member = await bot.get_chat_member(GROUP, user_id)
-        return member.status in ACTIVE_STATUSES
-    except:
-        return False
-
 async def check_sub(user_id):
-    return await check_channel(user_id), await check_group(user_id)
+    try:
+        member_ch = await bot.get_chat_member(CHANNEL, user_id)
+        in_channel = member_ch.status in ACTIVE_STATUSES
+    except:
+        in_channel = False
+    try:
+        member_gr = await bot.get_chat_member(GROUP, user_id)
+        in_group = member_gr.status in ACTIVE_STATUSES
+    except:
+        in_group = False
+    return in_channel, in_group
 
 async def send_not_subscribed(message, in_channel, in_group):
     btn = InlineKeyboardMarkup(row_width=1)
-    text_parts = ["❗ Botdan foydalanish uchun quyidagilarga obuna bo'ling:\n"]
+    text = "❗ Botdan foydalanish uchun quyidagilarga obuna bo'ling:\n"
     if not in_channel:
         btn.add(InlineKeyboardButton("📢 Kanalga obuna bo'lish", url=f"https://t.me/{CHANNEL[1:]}"))
-        text_parts.append(f"• Kanal: {CHANNEL}")
     if not in_group:
         btn.add(InlineKeyboardButton("👥 Guruhga qo'shilish", url=f"https://t.me/{GROUP[1:]}"))
-        text_parts.append(f"• Guruh: {GROUP}")
-    await message.answer("\n".join(text_parts), reply_markup=btn)
+    await message.answer(text, reply_markup=btn)
 
+# --- HANDLERLAR ---
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
     if message.chat.type in ["group", "supergroup"]:
@@ -178,226 +173,96 @@ async def admin_panel(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
     count = len(get_all_users())
-    await message.answer(
-        f"🛡 <b>Admin panel</b>\n\n👥 Jami foydalanuvchilar: <b>{count}</b>\n\n"
-        f"📋 <b>Buyruqlar:</b>\n• /admin — ushbu panel\n• /broadcast — hammaga xabar\n"
-        f"  <i>Misol: /broadcast Yangilik!</i>\n\n📎 Fayl → file_id\n🎥 Video → file_id",
-        parse_mode="HTML"
-    )
-
-@dp.message_handler(commands=["broadcast"])
-async def broadcast(message: types.Message):
-    if message.from_user.id != ADMIN_ID:
-        return
-    text = message.get_args()
-    if not text:
-        await message.answer("❗ Misol: /broadcast Assalomu alaykum!")
-        return
-    users = get_all_users()
-    success = failed = 0
-    status_msg = await message.answer(f"⏳ Yuborilmoqda... 0/{len(users)}")
-    for i, uid in enumerate(users):
-        try:
-            await bot.send_message(uid, f"📢 {text}")
-            success += 1
-        except:
-            failed += 1
-        if (i + 1) % 10 == 0:
-            try:
-                await status_msg.edit_text(f"⏳ Yuborilmoqda... {i+1}/{len(users)}")
-            except:
-                pass
-    await status_msg.edit_text(
-        f"✅ Tayyor!\n\n👤 Jami: {len(users)}\n✔️ Yuborildi: {success}\n❌ Xato: {failed}"
-    )
+    await message.answer(f"🛡 Admin panel\n\n👥 Foydalanuvchilar: {count}", parse_mode="HTML")
 
 @dp.message_handler(lambda m: m.text == "📚 Kitob")
 async def books_menu(message: types.Message):
     in_channel, in_group = await check_sub(message.from_user.id)
     if not in_channel or not in_group:
-        await send_not_subscribed(message, in_channel, in_group); return
+        await send_not_subscribed(message, in_channel, in_group)
+        return
     btn = InlineKeyboardMarkup(row_width=2)
     btn.add(InlineKeyboardButton("🇺🇿 O'zbek tili", callback_data="book_lang_uz"),
             InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="book_lang_en"))
-    btn.add(InlineKeyboardButton("📦 Hammasi birda (O'zbek)", callback_data="book_all_uz"))
-    btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_main"))
+    btn.add(InlineKeyboardButton("📦 Hammasi birda", callback_data="book_all_uz"))
     await message.answer("📚 Kitob tilini tanlang:", reply_markup=btn)
 
 @dp.message_handler(lambda m: m.text == "🎬 Kino")
 async def movies_menu(message: types.Message):
     in_channel, in_group = await check_sub(message.from_user.id)
     if not in_channel or not in_group:
-        await send_not_subscribed(message, in_channel, in_group); return
+        await send_not_subscribed(message, in_channel, in_group)
+        return
     btn = InlineKeyboardMarkup(row_width=2)
     btn.add(InlineKeyboardButton("🇺🇿 O'zbek tili", callback_data="movie_lang_uz"),
             InlineKeyboardButton("🇷🇺 Rus tili", callback_data="movie_lang_ru"))
-
-btn.add(InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="movie_lang_en"))
-btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_main"))
-await message.answer("🎬 Kino tilini tanlang:", reply_markup=btn)
+    btn.add(InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="movie_lang_en"))
+    await message.answer("🎬 Kino tilini tanlang:", reply_markup=btn)
 
 @dp.callback_query_handler(lambda c: c.data == "book_lang_uz")
 async def books_list_uz(callback: types.CallbackQuery):
     btn = InlineKeyboardMarkup(row_width=1)
     for i, b in enumerate(BOOKS):
         btn.add(InlineKeyboardButton(b["name"], callback_data=f"bookuz_{i}"))
-    btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_book_lang"))
-    await callback.message.edit_text("📚 O'zbek tilidagi kitoblar:\n\n✨ Kitob tanlang:", reply_markup=btn)
-    await callback.answer()
-
-@dp.callback_query_handler(lambda c: c.data == "book_lang_en")
-async def books_list_en(callback: types.CallbackQuery):
-    btn = InlineKeyboardMarkup(row_width=1)
-    for i, b in enumerate(BOOKS_EN):
-        btn.add(InlineKeyboardButton(b["name"], callback_data=f"booken_{i}"))
-    btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_book_lang"))
-    await callback.message.edit_text("📚 Harry Potter — English books:\n\n✨ Select a book:", reply_markup=btn)
-    await callback.answer()
-
-@dp.callback_query_handler(lambda c: c.data == "book_all_uz")
-async def send_book_all_uz(callback: types.CallbackQuery):
-    if not BOOK_ALL_UZ_FILE_ID:
-        await callback.message.answer("⏳ Hali qo'shilmagan!")
-    else:
-        await callback.message.answer_document(BOOK_ALL_UZ_FILE_ID, caption="📦 Barcha kitoblar (O'zbek)")
-    await callback.answer()
+    await callback.message.edit_text("📚 Kitob tanlang:", reply_markup=btn)
 
 @dp.callback_query_handler(lambda c: c.data == "movie_lang_uz")
 async def movies_list_uz(callback: types.CallbackQuery):
     btn = InlineKeyboardMarkup(row_width=1)
     for i, m in enumerate(MOVIES):
         btn.add(InlineKeyboardButton(m["name"], callback_data=f"movieuz_{i}"))
-    btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_movie_lang"))
-    await callback.message.edit_text("🎬 O'zbek tilidagi kinolar:\n\n🍿 Kino tanlang:", reply_markup=btn)
-    await callback.answer()
-
-@dp.callback_query_handler(lambda c: c.data == "movie_lang_ru")
-async def movies_list_ru(callback: types.CallbackQuery):
-    btn = InlineKeyboardMarkup(row_width=1)
-    for i, m in enumerate(MOVIES_RU):
-        btn.add(InlineKeyboardButton(m["name"], callback_data=f"movieru_{i}"))
-    btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_movie_lang"))
-    await callback.message.edit_text("🎬 Фильмы на русском:\n\n🍿 Выберите фильм:", reply_markup=btn)
-    await callback.answer()
-
-@dp.callback_query_handler(lambda c: c.data == "movie_lang_en")
-async def movies_list_en(callback: types.CallbackQuery):
-    btn = InlineKeyboardMarkup(row_width=1)
-    for i, m in enumerate(MOVIES_EN):
-        btn.add(InlineKeyboardButton(m["name"], callback_data=f"movieen_{i}"))
-    btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_movie_lang"))
-    await callback.message.edit_text("🎬 Harry Potter — English movies:\n\n🍿 Select a movie:", reply_markup=btn)
-    await callback.answer()
-
-@dp.callback_query_handler(lambda c: c.data == "back_main")
-async def back_to_main(callback: types.CallbackQuery):
-    await callback.message.delete()
-    await callback.answer()
-
-@dp.callback_query_handler(lambda c: c.data == "back_book_lang")
-async def back_book_lang(callback: types.CallbackQuery):
-    btn = InlineKeyboardMarkup(row_width=2)
-    btn.add(InlineKeyboardButton("🇺🇿 O'zbek tili", callback_data="book_lang_uz"),
-            InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="book_lang_en"))
-    btn.add(InlineKeyboardButton("📦 Hammasi birda (O'zbek)", callback_data="book_all_uz"))
-    btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_main"))
-    await callback.message.edit_text("📚 Kitob tilini tanlang:", reply_markup=btn)
-    await callback.answer()
-
-@dp.callback_query_handler(lambda c: c.data == "back_movie_lang")
-async def back_movie_lang(callback: types.CallbackQuery):
-    btn = InlineKeyboardMarkup(row_width=2)
-    btn.add(InlineKeyboardButton("🇺🇿 O'zbek tili", callback_data="movie_lang_uz"),
-            InlineKeyboardButton("🇷🇺 Rus tili", callback_data="movie_lang_ru"))
-    btn.add(InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="movie_lang_en"))
-    btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_main"))
-    await callback.message.edit_text("🎬 Kino tilini tanlang:", reply_markup=btn)
-    await callback.answer()
+    await callback.message.edit_text("🎬 Kino tanlang:", reply_markup=btn)
 
 @dp.callback_query_handler(lambda c: c.data.startswith("bookuz_"))
 async def send_book_uz(callback: types.CallbackQuery):
-    b = BOOKS[int(callback.data.split("_")[1])]
-    if not b["file_id"]: await callback.message.answer("⏳ Hali qo'shilmagan!")
-    else: await callback.message.answer_document(b["file_id"], caption=b["name"])
-    await callback.answer()
-
-@dp.callback_query_handler(lambda c: c.data.startswith("booken_"))
-async def send_book_en(callback: types.CallbackQuery):
-    b = BOOKS_EN[int(callback.data.split("_")[1])]
-    if not b["file_id"]: await callback.message.answer("⏳ Coming soon!")
-    else: await callback.message.answer_document(b["file_id"], caption=b["name"])
+    idx = int(callback.data.split("_")[1])
+    b = BOOKS[idx]
+    await callback.message.answer_document(b["file_id"], caption=b["name"])
     await callback.answer()
 
 @dp.callback_query_handler(lambda c: c.data.startswith("movieuz_"))
 async def send_movie_uz(callback: types.CallbackQuery):
-    m = MOVIES[int(callback.data.split("_")[1])]
-    if not m["file_id"]: await callback.message.answer("⏳ Hali qo'shilmagan!")
-    else: await callback.message.answer_video(m["file_id"], caption=m["name"])
-    await callback.answer()
-
-@dp.callback_query_handler(lambda c: c.data.startswith("movieru_"))
-async def send_movie_ru(callback: types.CallbackQuery):
-    m = MOVIES_RU[int(callback.data.split("_")[1])]
-    if not m["file_id"]: await callback.message.answer("⏳ Hali qo'shilmagan!")
-    else: await callback.message.answer_video(m["file_id"], caption=m["name"])
-    await callback.answer()
-
-@dp.callback_query_handler(lambda c: c.data.startswith("movieen_"))
-async def send_movie_en(callback: types.CallbackQuery):
-    m = MOVIES_EN[int(callback.data.split("_")[1])]
-    if not m["file_id"]: await callback.message.answer("⏳ Coming soon!")
-    else: await callback.message.answer_video(m["file_id"], caption=m["name"])
+    idx = int(callback.data.split("_")[1])
+    m = MOVIES[idx]
+    await callback.message.answer_video(m["file_id"], caption=m["name"])
     await callback.answer()
 
 @dp.message_handler(lambda m: m.text == "🎩 Saralovchi shlyapa")
 async def hat(message: types.Message):
     in_channel, in_group = await check_sub(message.from_user.id)
     if not in_channel or not in_group:
-        await send_not_subscribed(message, in_channel, in_group); return
+        await send_not_subscribed(message, in_channel, in_group)
+        return
     uid = message.from_user.id
     saved = get_user_house(uid)
-    btn = InlineKeyboardMarkup()
-    btn.add(InlineKeyboardButton("🎩 Shlyapaga yozish", url="https://t.me/elite_shlyapa"))
     if saved:
         kw = HOUSE_KEYWORDS[saved]
-        await message.answer(f"🎩 Siz allaqachon saralangansiz!\n\nFakultet: {saved}\n\n🔑 Kalit so'z: <code>{kw}</code>\n\nCopy qilib shlyapaga yuboring!", parse_mode="HTML", reply_markup=btn)
+        await message.answer(f"🎩 Fakultetingiz: {saved}\n🔑 Kalit so'z: {kw}")
     else:
-        result = random.choice(houses)
-        save_house(uid, result)
-        kw = HOUSE_KEYWORDS[result]
-        await message.answer(f"🎩 Saralovchi shlyapa tanladi!\n\nFakultet: {result}\n\n🔑 Kalit so'z: <code>{kw}</code>\n\nCopy qilib shlyapaga yuboring!", parse_mode="HTML", reply_markup=btn)
+        res = random.choice(houses)
+        save_house(uid, res)
+        kw = HOUSE_KEYWORDS[res]
+        await message.answer(f"🎩 Saralovchi shlyapa tanladi: {res}\n🔑 Kalit so'z: {kw}")
 
 @dp.message_handler(commands=["hat"])
 async def hat_group(message: types.Message):
     uid = message.from_user.id
     saved = get_user_house(uid)
-    btn = InlineKeyboardMarkup()
-    btn.add(InlineKeyboardButton("🎩 Shlyapaga yozish", url="https://t.me/elite_shlyapa"))
     if saved:
-        kw = HOUSE_KEYWORDS[saved]
-        await message.reply(f"🎩 Fakultet: {saved}\n\n🔑 Kalit so'z: <code>{kw}</code>", parse_mode="HTML", reply_markup=btn)
-
+        await message.reply(f"🎩 Fakultet: {saved}")
     else:
-        result = random.choice(houses)
-        save_house(uid, result)
-        kw = HOUSE_KEYWORDS[result]
-        await message.reply(f"🎩 Tanlandi: {result}\n\n🔑 Kalit so'z: <code>{kw}</code>", parse_mode="HTML", reply_markup=btn)
+        res = random.choice(houses)
+        save_house(uid, res)
+        await message.reply(f"🎩 Tanlandi: {res}")
 
-@dp.message_handler(content_types=["document"], chat_type="private")
-async def get_document_id(message: types.Message):
+@dp.message_handler(content_types=["document", "video"])
+async def get_ids(message: types.Message):
     if message.from_user.id != ADMIN_ID: return
-    fid = message.document.file_id
-    name = message.document.file_name or "nomsiz"
-    await message.reply(f"✅ Fayl!\n\n📄 {name}\n🔑 file_id:\n<code>{fid}</code>", parse_mode="HTML")
-
-@dp.message_handler(content_types=["video"], chat_type="private")
-async def get_video_id(message: types.Message):
-    if message.from_user.id != ADMIN_ID: return
-    fid = message.video.file_id
-    await message.reply(f"✅ Video!\n\n🔑 file_id:\n<code>{fid}</code>", parse_mode="HTML")
+    fid = message.document.file_id if message.document else message.video.file_id
+    await message.reply(f"🔑 file_id:\n<code>{fid}</code>", parse_mode="HTML")
 
 async def on_startup(_):
     await bot.set_my_commands([BotCommand("start", "Botni ishga tushirish")])
 
-if name == "main":
+if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
