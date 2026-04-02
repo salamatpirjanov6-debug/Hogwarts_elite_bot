@@ -12,7 +12,8 @@ from aiogram.types import (
 )
 
 # --- SOZLAMALAR ---
-API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+# Railway yoki boshqa hostda environment variable sifatida TELEGRAM_BOT_TOKEN ni o'rnating
+API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "BOT_TOKENINGIZNI_SHU_YERGA_YOZING")
 CHANNEL = "@harry_potter_fans_uz"
 GROUP = "@hogwarts_elite"
 ADMIN_ID = 7670992727
@@ -22,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
-# --- 1. ESKI IDlar (O'ZBEKCHA) ---
+# --- FAYL IDLAR (O'ZBEKCHA, RUSCHA, INGLIZCHA) ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
@@ -46,7 +47,6 @@ MOVIES_UZ = [
     {"name": "🎬 8. Ajal tuhfalari 2", "file_id": "BAACAgIAAxkBAAOJacu1AoUKWQUInEPM0DGXvSZhueUAAqmFAALhnOhKZfF9wiu0Drs6BA"},
 ]
 
-# --- 2. INGLIZCHA MA'LUMOTLAR (MENYULI QILINDI) ---
 BOOKS_EN = [
     {"name": "📖 HP 1: Philosopher's Stone", "file_id": "BQACAgUAAxkBAAIDOWnOk3dbX8E-yaAVFy_xfeP6IqKGAAL_AwACn_N4VR4lpjl-n1tZOgQ"},
     {"name": "📖 HP 2: Chamber of Secrets", "file_id": "BQACAgUAAxkBAAIDO2nOk9iTjQ_vULXaRoo7BPiFoyESAAMEAAKf83hV774CCp3aF146BA"},
@@ -81,7 +81,7 @@ MOVIES_RU = [
 
 ALL_IN_ONE_BOOK = "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ"
 
-# --- 3. MENYULAR ---
+# --- MENYULAR ---
 def main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(KeyboardButton("📚 Kitoblar"), KeyboardButton("🎬 Kinolar"))
@@ -112,7 +112,7 @@ houses = ["🦁 Gryffindor", "🐍 Slytherin", "🦡 Hufflepuff", "🦅 Ravencla
 HOUSES_FILE = "user_houses.json"
 ACTIVE_STATUSES = {"creator", "administrator", "member", "restricted"}
 
-# --- BAZA ---
+# --- BAZA FUNKSIYALARI ---
 def load_houses():
     if os.path.exists(HOUSES_FILE):
         with open(HOUSES_FILE, "r") as f: return json.load(f)
@@ -131,33 +131,41 @@ async def check_sub(user_id):
     except: return False, False
 
 # --- HANDLERLAR ---
+
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     in_ch, in_gr = await check_sub(message.from_user.id)
+    
     if not in_ch or not in_gr:
         btn = InlineKeyboardMarkup(row_width=1)
-        if not in_ch: btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
-        if not in_gr: btn.add(InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"))
-        await message.answer("❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
+        if not in_ch: btn.add(InlineKeyboardButton("📢 Kanalga obuna bo'lish", url=f"https://t.me/{CHANNEL[1:]}"))
+        if not in_gr: btn.add(InlineKeyboardButton("👥 Guruhga obuna bo'lish", url=f"https://t.me/{GROUP[1:]}"))
+        # TEKSHIRISH TUGMASI QO'SHILDI
+        btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
+        
+        await message.answer("❗ Botdan foydalanish uchun kanal va guruhimizga obuna bo'ling:", reply_markup=btn)
         return
     
-    # ISM BILAN SALOMLASHISH
     user_name = message.from_user.first_name
     await message.answer(f"Xush kelibsiz {user_name}! Kerakli bo'limni tanlang:", reply_markup=main_menu())
-
-@dp.message_handler(lambda m: m.text == "📚 Kitoblar")
-async def show_book_langs(message: types.Message):
-    await message.answer("Kitoblar uchun tilni tanlang:", reply_markup=book_lang_menu())
-
-@dp.message_handler(lambda m: m.text == "🎬 Kinolar")
-async def show_movie_langs(message: types.Message):
-    await message.answer("Kinolar uchun tilni tanlang:", reply_markup=movie_lang_menu())
 
 # --- CALLBACKLAR ---
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
     uid = callback.message.chat.id
     
+    # OBUNA TEKSHIRISH TUGMASI LOGIKASI
+    if callback.data == "check_sub_status":
+        in_ch, in_gr = await check_sub(callback.from_user.id)
+        if in_ch and in_gr:
+            await callback.message.delete()
+            # Obuna bo'lgan bo'lsa, qayta start buyrug'i kabi asosiy menyuni chiqaradi
+            user_name = callback.from_user.first_name
+            await bot.send_message(uid, f"Tabriklaymiz {user_name}! Endi botdan foydalanishingiz mumkin.", reply_markup=main_menu())
+        else:
+            await callback.answer("Siz hali obuna bo'lmagansiz, iltimos qayta urinib ko'ring!", show_alert=True)
+        return
+
     if callback.data == "back_to_main":
         await callback.message.delete()
         await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
@@ -224,27 +232,52 @@ async def callback_handler(callback: types.CallbackQuery):
 # --- SHLYAPA (KALIT SO'ZLAR VA USERNAME BILAN) ---
 @dp.message_handler(lambda m: m.text == "🎩 Saralovchi shlyapa")
 async def sorting_hat(message: types.Message):
+    # Obunani tekshirish
+    in_ch, in_gr = await check_sub(message.from_user.id)
+    if not in_ch or not in_gr:
+        return await start_cmd(message)
+
     uid = str(message.from_user.id)
     data = load_houses()
     
-    # Kalit so'zlar (Eski kodda bo'lgan matnlar)
+    # Siz aytgan xarakter haqidagi yozuv va kalit so'z ko'rsatmasi
     intro_text = (
-        "🔍 Men sening xarakteringni o'rganib chiqdim...\n"
-        "✨ Qalbingdagi yashirin kuchlarni ko'ryapman.\n"
-        "🧙‍♂️ Qaysi fakultet senga munosib ekanini aniqladim!"
+        "Men sening xarakteringni oʻrganib chiqdim, qalbingni yashirin kuchlarini koʻryapman, "
+        "qaysi fakultet senga munosib ekanini aniqladim."
     )
     
     btn = InlineKeyboardMarkup()
     btn.add(InlineKeyboardButton("🎩 Shlyapa bilan bog'lanish", url=f"https://t.me/{SHLYAPA_USER}"))
 
     if uid in data:
-        await message.answer(f"{intro_text}\n\nSiz allaqachon saralangansiz! Fakultetingiz: **{data[uid]}**", reply_markup=btn, parse_mode="Markdown")
+        chosen = data[uid]
+        final_text = (f"{intro_text}\n\n"
+                      f"Siz allaqachon saralangansiz! Sizning fakultetingiz: **{chosen}**\n\n"
+                      f"Kalit so'zi: `{chosen}`\n"
+                      f"Kalit so'zini shlyapaga yuboring.")
+        await message.answer(final_text, reply_markup=btn, parse_mode="Markdown")
     else:
-        res = random.choice(houses)
-        save_house(uid, res)
-        await message.answer(f"{intro_text}\n\nSaralovchi shlyapa tanlovi: **{res}**!", reply_markup=btn, parse_mode="Markdown")
+        chosen = random.choice(houses)
+        save_house(uid, chosen)
+        final_text = (f"{intro_text}\n\n"
+                      f"Sizning fakultetingiz: **{chosen}**\n\n"
+                      f"Kalit so'zi: `{chosen}`\n"
+                      f"Kalit so'zini shlyapaga yuboring.")
+        await message.answer(final_text, reply_markup=btn, parse_mode="Markdown")
 
-# Admin uchun ID olish funksiyasi saqlandi
+# --- KITOBLAR VA KINOLAR MATNLI HANDLER (OBUNA TEKSHIRUVI BILAN) ---
+@dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar"])
+async def media_check(message: types.Message):
+    in_ch, in_gr = await check_sub(message.from_user.id)
+    if not in_ch or not in_gr:
+        return await start_cmd(message)
+    
+    if message.text == "📚 Kitoblar":
+        await show_book_langs(message)
+    else:
+        await show_movie_langs(message)
+
+# Admin uchun file_id olish
 @dp.message_handler(content_types=["document", "video"])
 async def get_ids(message: types.Message):
     if message.from_user.id == ADMIN_ID:
@@ -253,3 +286,4 @@ async def get_ids(message: types.Message):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
+    
