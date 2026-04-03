@@ -45,7 +45,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- 1. KITOOBLAR BAZASI (TO'LIQ TIKLANDI) ---
+# --- KITOOBLAR VA KINOLAR BAZASI (O'ZGARISHSIZ) ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
@@ -70,7 +70,6 @@ BOOKS_ALL = [
     {"name": "📚 All Books (1-7)", "file_id": "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ"}
 ]
 
-# --- 2. KINOLAR BAZASI (TO'LIQ TIKLANDI) ---
 MOVIES_UZ = [
     {"name": "🎬 1. Hikmatlar toshi", "file_id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA"},
     {"name": "🎬 2. Maxfiy hujra", "file_id": "BAACAgIAAxkBAAOFacu0BPXsr3WF3yYGmJHdjVeDjSMAAmSFAALhnOhKpL77RQyPlaE6BA"},
@@ -104,7 +103,6 @@ MOVIES_EN = [
     {"name": "🎬 8. Deathly Hallows 2", "file_id": "BAACAgQAAxkBAAIDZ2nOl41aUWcgKRzzP_r-suInRRSKAAKkCAACqwKBUC733-s2FjB3OgQ"},
 ]
 
-# --- SHLYAPA GAPLARI ---
 SORTING_MESSAGES = [
     "🤔 *Hmmm... qiyin, juda qiyin.* \nKo'ryapman, bu yerda aql ham yetarli, iste'dod ham... va-a-ay, qanday ulkan xohish!",
     "🧐 *Iye, bu qanday sirli qalb?* \nAql bovar qilmaydigan jasorat, biroz makr... Ha, sen Hogvarts tarixini o'zgartira olasan!",
@@ -113,7 +111,7 @@ SORTING_MESSAGES = [
     "🦁 *Bu yerda nima bor?* \nYuraging to'la qo'rqmaslik. Sen xavf-xatarga tik boqishni bilasan. Ha, jasurlik sening qoningda!"
 ]
 
-# --- MENYULAR ---
+# --- MENYULAR (O'ZGARISHSIZ) ---
 def main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(KeyboardButton("📚 Kitoblar"), KeyboardButton("🎬 Kinolar"))
@@ -150,12 +148,10 @@ async def check_sub(user_id):
         return m_ch.status in ACTIVE_STATUSES, m_gr.status in ACTIVE_STATUSES
     except: return False, False
 
-# --- 1. START BUYRUG'I ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     if message.chat.type != 'private':
         return await message.answer(".", reply_markup=ReplyKeyboardRemove())
-
     register_user(message.from_user.id)
     in_ch, in_gr = await check_sub(message.from_user.id)
     if not in_ch or not in_gr:
@@ -167,7 +163,6 @@ async def start_cmd(message: types.Message):
         return
     await message.answer(f"Xush kelibsiz {message.from_user.first_name}! Bo'limni tanlang:", reply_markup=main_menu())
 
-# --- 2. GURUHDA FAQAT /HAT ---
 @dp.message_handler(commands=["hat"])
 async def hat_group(message: types.Message):
     uid = str(message.from_user.id)
@@ -184,29 +179,76 @@ async def hat_group(message: types.Message):
             f"🔑 Kalit so'zi: `{key_word}`\n\n*(Nusxa olish uchun ustiga bosing)*")
     await message.reply(text, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove())
 
-# --- 3. KUTIB OLISH ---
+# --- 3. KUTIB OLISH (YANGILANGAN: MEDIA VA LINK) ---
 @dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
 async def set_welcome(message: types.Message):
-    text = message.get_args()
+    # Bu qism endi media yuborishni ham qo'llab-quvvatlaydi
+    await message.reply("Kutib olish xabari uchun matn, rasm yoki video yuboring. {name} so'zini ishlatsangiz link bo'ladi.")
+    dp.register_message_handler(save_welcome_step, user_id=ADMIN_ID, state=None, content_types=types.ContentTypes.ANY)
+
+async def save_welcome_step(message: types.Message):
+    # Admin matn yoki media yuborganda saqlaydi
+    text = message.caption if message.caption else message.text
     if not text:
-        await message.reply("Foydalanish: `/setwelcome Salom {name}!`")
-        return
+        return await message.reply("Xatolik: Xabar matnini yozishingiz shart!")
+
+    file_id = "None"
+    file_type = "text"
+    
+    if message.photo:
+        file_id = message.photo[-1].file_id
+        file_type = "photo"
+    elif message.video:
+        file_id = message.video.file_id
+        file_type = "video"
+    elif message.animation:
+        file_id = message.animation.file_id
+        file_type = "animation"
+
     settings = load_data(WELCOME_FILE)
-    settings[str(message.chat.id)] = text
+    settings[str(message.chat.id)] = {"text": text, "file_id": file_id, "file_type": file_type}
     save_data(WELCOME_FILE, settings)
-    await message.reply("✅ Kutib olish saqlandi.", reply_markup=ReplyKeyboardRemove())
+    
+    # Handlerlarni tozalash (faqat bir marta saqlash uchun)
+    dp.message_handlers.unregister(save_welcome_step)
+    await message.reply("✅ Kutib olish xabari va media saqlandi.")
 
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def welcome_handler(message: types.Message):
     settings = load_data(WELCOME_FILE)
-    welcome_text = settings.get(str(message.chat.id), "Xush kelibsiz!")
-    btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start"))
-    for user in message.new_chat_members:
-        text = welcome_text.replace("{name}", user.first_name)
-        await message.answer(text, reply_markup=btn)
-        await message.answer(".", reply_markup=ReplyKeyboardRemove())
+    data = settings.get(str(message.chat.id))
+    
+    if not data:
+        welcome_text = "Xush kelibsiz {name}!"
+        file_type = "text"
+    elif isinstance(data, str): # Eski format bo'lsa
+        welcome_text = data
+        file_type = "text"
+    else:
+        welcome_text = data["text"]
+        file_type = data["file_type"]
+        file_id = data["file_id"]
 
-# --- 4. REKLAMA ---
+    btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start"))
+    
+    for user in message.new_chat_members:
+        # ISMNI LINK QILISH (HTML)
+        user_link = f'<a href="tg://user?id={user.id}">{user.first_name}</a>'
+        text = welcome_text.replace("{name}", user_link)
+        
+        try:
+            if file_type == "photo":
+                await bot.send_photo(message.chat.id, file_id, caption=text, reply_markup=btn, parse_mode="HTML")
+            elif file_type == "video":
+                await bot.send_video(message.chat.id, file_id, caption=text, reply_markup=btn, parse_mode="HTML")
+            elif file_type == "animation":
+                await bot.send_animation(message.chat.id, file_id, caption=text, reply_markup=btn, parse_mode="HTML")
+            else:
+                await message.answer(text, reply_markup=btn, parse_mode="HTML")
+        except:
+            await message.answer(text, reply_markup=btn, parse_mode="HTML")
+
+# --- REKLAMA VA BOSHQA FILTRLAR (O'ZGARISHSIZ) ---
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
     text = message.get_args()
@@ -225,7 +267,6 @@ async def send_ads(message: types.Message):
         except: continue
     await status_msg.edit_text(f"✅ Yetkazildi: {count}")
 
-# --- 5. MENYULAR FILTRI ---
 @dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
 async def private_menus(message: types.Message):
     if message.chat.type != 'private':
@@ -249,7 +290,6 @@ async def private_menus(message: types.Message):
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapa bot", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
-# --- CALLBACKLAR (TO'LIQ) ---
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
     uid = callback.message.chat.id
@@ -312,3 +352,4 @@ async def callback_handler(callback: types.CallbackQuery):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
+    
