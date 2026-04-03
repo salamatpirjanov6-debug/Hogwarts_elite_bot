@@ -127,17 +127,21 @@ async def is_admin(message: types.Message):
     member = await bot.get_chat_member(message.chat.id, message.from_user.id)
     return member.status in ["creator", "administrator"] or message.from_user.id == ADMIN_ID
 
-# --- 3. START BUYRUQI (SIZ AYTGANDAY TARTIBLANGAN) ---
+# --- 3. START BUYRUQI (Tahrirlangan) ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     register_user(message.from_user.id)
     
-    # GURUHDA START BOSILSA: Faqat botga o'tish tugmasi
+    # GURUHDA START BOSILSA: Javob beradi, lekin kitob/kino menyusini chiqarmaydi
     if message.chat.type != 'private':
         btn = InlineKeyboardMarkup().add(
             InlineKeyboardButton("🤖 Botning o'ziga o'tish", url=f"https://t.me/{bot.username}?start=true")
         )
-        await message.reply("Botning barcha funksiyalari (Kitoblar, Kinolar) shaxsiy chatda! 👇", reply_markup=btn)
+        await message.reply(
+            f"Assalomu alaykum {message.from_user.first_name}! Men Hogwarts Elite nazoratchi botiman. 🛡\n\n"
+            "Kitoblar va kinolarni ko'rish uchun shaxsiy chatga o'ting.", 
+            reply_markup=btn
+        )
         return
 
     # SHAXSIY CHATDA START BOSILSA
@@ -147,10 +151,10 @@ async def start_cmd(message: types.Message):
         if not in_ch: btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
         if not in_gr: btn.add(InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"))
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
-        await message.answer("❗ Avval a'zo bo'ling:", reply_markup=btn)
+        await message.answer("❗ Botdan foydalanish uchun kanal va guruhga a'zo bo'ling:", reply_markup=btn)
         return
         
-    await message.answer(f"Xush kelibsiz {message.from_user.first_name}!", reply_markup=main_menu())
+    await message.answer(f"Xush kelibsiz {message.from_user.first_name}! Kerakli bo'limni tanlang:", reply_markup=main_menu())
 
 # --- 4. NAZORATCHI BUYRUQLARI ---
 @dp.message_handler(commands=["mute"])
@@ -162,7 +166,7 @@ async def mute_cmd(message: types.Message):
         await bot.restrict_chat_member(message.chat.id, message.reply_to_message.from_user.id, 
                                       permissions=types.ChatPermissions(can_send_messages=False), 
                                       until_date=until_date)
-        await message.answer(f"🔇 {duration} daqiqaga mut qilindi.")
+        await message.answer(f"🔇 Foydalanuvchi {duration} daqiqaga mut qilindi.")
 
 @dp.message_handler(commands=["unmute"])
 async def unmute_cmd(message: types.Message):
@@ -170,24 +174,24 @@ async def unmute_cmd(message: types.Message):
     if message.reply_to_message:
         await bot.restrict_chat_member(message.chat.id, message.reply_to_message.from_user.id, 
                                       permissions=types.ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_other_messages=True))
-        await message.answer("🔊 Mut olindi.")
+        await message.answer("🔊 Foydalanuvchidan cheklov olindi.")
 
 @dp.message_handler(commands=["ban"])
 async def ban_cmd(message: types.Message):
     if not await is_admin(message): return
     if message.reply_to_message:
         await bot.kick_chat_member(message.chat.id, message.reply_to_message.from_user.id)
-        await message.answer("🚫 Ban berildi.")
+        await message.answer("🚫 Foydalanuvchi guruhdan haydaldi.")
 
 @dp.message_handler(commands=["top"])
 async def top_cmd(message: types.Message):
     stats = load_data(STATS_FILE)
     cid = str(message.chat.id)
-    if cid not in stats: return await message.answer("Aktivlik mavjud emas.")
+    if cid not in stats: return await message.answer("Hozircha aktivlik yo'q.")
     sorted_users = sorted(stats[cid].items(), key=lambda x: x[1]['count'], reverse=True)[:10]
-    text = f"🏆 **Guruhdagi Top 10 aktiv foydalanuvchilar:**\n\n"
+    text = f"🏆 **Guruhdagi eng faol 10 a'zo:**\n\n"
     for i, (uid, data) in enumerate(sorted_users, 1):
-        text += f"{i}. {data['name']} — {data['count']} ta xabar\n"
+        text += f"{i}. {data['name']} — {data['count']} xabar\n"
     await message.answer(text, parse_mode="Markdown")
 
 # --- 5. GLOBAL HANDLER ---
@@ -212,13 +216,13 @@ async def global_handler(message: types.Message):
                     return
     else:
         if message.text == "📚 Kitoblar":
-            await message.answer("Kitoblar tili:", reply_markup=book_lang_menu())
+            await message.answer("Qaysi tildagi kitoblarni qidiryapsiz?", reply_markup=book_lang_menu())
         elif message.text == "🎬 Kinolar":
-            await message.answer("Kinolar tili:", reply_markup=movie_lang_menu())
+            await message.answer("Qaysi tildagi kinolarni ko'rmoqchisiz?", reply_markup=movie_lang_menu())
         elif message.text == "🎩 Saralovchi shlyapa":
-            await message.answer(f"Fakultetingizni bilish uchun shlyapa botiga o'ting: @{SHLYAPA_USER}")
+            await message.answer(f"Fakultetingizni aniqlash uchun Shlyapa botiga murojaat qiling: @{SHLYAPA_USER}")
 
-# --- 6. CALLBACK HANDLER (HAMMA TILLAR TIKLANDI) ---
+# --- 6. CALLBACK HANDLER ---
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
     uid = callback.message.chat.id
@@ -228,38 +232,38 @@ async def callback_handler(callback: types.CallbackQuery):
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
             await callback.message.delete()
-            await bot.send_message(uid, "🎉 Bot tayyor!", reply_markup=main_menu())
-        else: await callback.answer("Obuna bo'lmagansiz!", show_alert=True)
+            await bot.send_message(uid, "🎉 Rahmat! Endi botdan to'liq foydalanishingiz mumkin.", reply_markup=main_menu())
+        else: await callback.answer("Siz hali a'zo bo'lmagansiz!", show_alert=True)
 
     elif data == "back_to_main":
         await callback.message.delete()
-        await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
+        await bot.send_message(uid, "Asosiy menyuga qaytdingiz:", reply_markup=main_menu())
 
-    # Kitoblar bo'limi
+    # Kitoblar
     elif data == "lang_book_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_UZ): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_uz_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇺🇿 O'zbekcha kitoblar:", reply_markup=btn)
+        await callback.message.edit_text("🇺🇿 O'zbek tilidagi kitoblar:", reply_markup=btn)
     elif data == "lang_book_en":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_EN): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_en_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇬🇧 English books:", reply_markup=btn)
+        await callback.message.edit_text("🇬🇧 Ingliz tilidagi kitoblar:", reply_markup=btn)
 
-    # Kinolar bo'limi
+    # Kinolar
     elif data == "lang_movie_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_UZ): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_uz_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇺🇿 O'zbekcha kinolar:", reply_markup=btn)
+        await callback.message.edit_text("🇺🇿 O'zbek tilidagi kinolar:", reply_markup=btn)
     elif data == "lang_movie_ru":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_RU): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_ru_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇷🇺 Ruscha kinolar:", reply_markup=btn)
+        await callback.message.edit_text("🇷🇺 Rus tilidagi kinolar:", reply_markup=btn)
 
-    # Fayllarni jo'natish
+    # Fayllarni yuborish
     elif data.startswith("bk_"):
         p = data.split("_")
         l, idx = p[1], int(p[2])
@@ -276,4 +280,4 @@ async def callback_handler(callback: types.CallbackQuery):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
-    
+        
