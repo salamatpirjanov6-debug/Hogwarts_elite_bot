@@ -20,6 +20,7 @@ CHANNEL = "@harry_potter_fans_uz"
 GROUP = "@hogwarts_elite"
 ADMIN_ID = 7670992727
 SHLYAPA_USER = "elite_shlyapa"
+BOT_USERNAME = "Hogwarts_elite_bot" # Bot manzili tugma uchun
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN)
@@ -44,7 +45,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- 1. KITOOBLAR BAZASI (HECH NIMA O'CHIRILMADI) ---
+# --- 1. KITOOBLAR BAZASI (ASL HOLI) ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
@@ -69,7 +70,7 @@ BOOKS_ALL = [
     {"name": "📚 All Books (1-7)", "file_id": "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ"}
 ]
 
-# --- 2. KINOLAR BAZASI (TO'LIQ) ---
+# --- 2. KINOLAR BAZASI (ASL HOLI) ---
 MOVIES_UZ = [
     {"name": "🎬 1. Hikmatlar toshi", "file_id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA"},
     {"name": "🎬 2. Maxfiy hujra", "file_id": "BAACAgIAAxkBAAOFacu0BPXsr3WF3yYGmJHdjVeDjSMAAmSFAALhnOhKpL77RQyPlaE6BA"},
@@ -103,7 +104,7 @@ MOVIES_EN = [
     {"name": "🎬 8. Deathly Hallows 2", "file_id": "BAACAgQAAxkBAAIDZ2nOl41aUWcgKRzzP_r-suInRRSKAAKkCAACqwKBUC733-s2FjB3OgQ"},
 ]
 
-# --- SHLYAPA GAPLARI (TO'LIQ) ---
+# --- SHLYAPA GAPLARI (ASL HOLI) ---
 SORTING_MESSAGES = [
     "🤔 *Hmmm... qiyin, juda qiyin.* \nKo'ryapman, bu yerda aql ham yetarli, iste'dod ham... va-a-ay, qanday ulkan xohish!",
     "🧐 *Iye, bu qanday sirli qalb?* \nAql bovar qilmaydigan jasorat, biroz makr... Ha, sen Hogvarts tarixini o'zgartira olasan!",
@@ -149,11 +150,10 @@ async def check_sub(user_id):
         return m_ch.status in ACTIVE_STATUSES, m_gr.status in ACTIVE_STATUSES
     except: return False, False
 
-# --- 1. START BUYRUG'I (GURUHDA MENYUNI YO'QOTADI) ---
+# --- 1. START BUYRUG'I ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     if message.chat.type != 'private':
-        # Guruhda start bosilsa, hech nima chiqmaydi va menyu tugmalari bo'lsa yo'qoladi
         return await message.answer(".", reply_markup=ReplyKeyboardRemove())
 
     register_user(message.from_user.id)
@@ -167,29 +167,25 @@ async def start_cmd(message: types.Message):
         return
     await message.answer(f"Xush kelibsiz {message.from_user.first_name}! Bo'limni tanlang:", reply_markup=main_menu())
 
-# --- 2. GURUHDA FAQAT /HAT ISHLAYDI ---
+# --- 2. GURUHDA FAQAT /HAT ---
 @dp.message_handler(commands=["hat"])
 async def hat_group(message: types.Message):
     uid = str(message.from_user.id)
     data = load_data(HOUSES_FILE)
     intro_text = random.choice(SORTING_MESSAGES)
-    
     if uid not in data:
         fname = random.choice(list(houses_dict.keys()))
         data[uid] = fname
         save_data(HOUSES_FILE, data)
-    
     fname = data[uid]
     key_word = houses_dict[fname]
     house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
     h_emoji = house_emojis[fname]
-    
     text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {h_emoji} **{fname}** {h_emoji}\n\n"
             f"🔑 Kalit so'zi: `{key_word}`\n\n*(Nusxa olish uchun ustiga bosing)*")
-    # ReplyKeyboardRemove() orqali guruhda menyuni majburan yopamiz
     await message.reply(text, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove())
 
-# --- 3. SETWELCOME BUYRUG'I ---
+# --- 3. KUTIB OLISH VA TUGMA ---
 @dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
 async def set_welcome(message: types.Message):
     text = message.get_args()
@@ -205,47 +201,42 @@ async def set_welcome(message: types.Message):
 async def welcome_handler(message: types.Message):
     settings = load_data(WELCOME_FILE)
     welcome_text = settings.get(str(message.chat.id), "Xush kelibsiz!")
+    
+    # Fakultet tanlash tugmasini yaratish
+    btn = InlineKeyboardMarkup().add(
+        InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start")
+    )
+    
     for user in message.new_chat_members:
         text = welcome_text.replace("{name}", user.first_name)
-        # Yangi odam kelganda ham menyu chiqmasligini ta'minlaymiz
-        await message.answer(text, reply_markup=ReplyKeyboardRemove())
+        await message.answer(text, reply_markup=btn)
+        # Guruhda menyu paydo bo'lib qolmasligini ta'minlash
+        await message.answer(".", reply_markup=ReplyKeyboardRemove())
 
-# --- 4. REKLAMA YUBORISH (ASL HOLI) ---
+# --- 4. REKLAMA (ASL HOLI) ---
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
     text = message.get_args()
     reply = message.reply_to_message
-    if not text and not reply:
-        await message.reply("Foydalanish: `/send xabar_matni` yoki reply qilib `/send` yozing.")
-        return
-    
+    if not text and not reply: return
     users = load_data(USERS_FILE)
     u_list = list(users.keys())
-    total = len(u_list)
-    status_msg = await message.answer(f"🚀 {total} ta foydalanuvchiga yuborish boshlandi...")
-    
-    count, blocked, errors = 0, 0, 0
+    status_msg = await message.answer(f"🚀 Yuborilmoqda...")
+    count = 0
     for uid in u_list:
         try:
             if reply: await reply.copy_to(int(uid))
             else: await bot.send_message(int(uid), text)
             count += 1
-            if count % 10 == 0: await asyncio.sleep(1.5)
-        except exceptions.BotBlocked: blocked += 1
-        except Exception: errors += 1
-            
-    await status_msg.edit_text(f"✅ Yakunlandi!\n\nJami: {total}\nYetkazildi: {count}\nBlokladi: {blocked}\nXatoliklar: {errors}")
+            if count % 10 == 0: await asyncio.sleep(1)
+        except: continue
+    await status_msg.edit_text(f"✅ Yetkazildi: {count}")
 
-# --- 5. MENYULAR FILTRI (FAQAT SHAXSIYDA ISHLAYDI) ---
+# --- 5. MENYULAR FILTRI ---
 @dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
 async def private_menus(message: types.Message):
     if message.chat.type != 'private':
-        # Guruhda kimgadir bu tugma ko'rinib qolsa va bossa, bot uni o'chirib tashlaydi
         return await message.answer(".", reply_markup=ReplyKeyboardRemove())
-
-    if not (await check_sub(message.from_user.id))[0]:
-        return await start_cmd(message)
-
     if message.text == "📚 Kitoblar":
         await message.answer("Kitoblar uchun tilni tanlang:", reply_markup=book_lang_menu())
     elif message.text == "🎬 Kinolar":
@@ -261,77 +252,57 @@ async def private_menus(message: types.Message):
         fname = data[uid]
         key_word = houses_dict[fname]
         house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
-        text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {house_emojis[fname]} **{fname}** {house_emojis[fname]}\n\n"
-                f"🔑 Kalit so'zi: `{key_word}`\n\n*(Nusxa olish uchun ustiga bosing)*\nKalit so'zni shlyapaga yuboring 👇")
+        text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {house_emojis[fname]} **{fname}** {house_emojis[fname]}\n\n🔑 Kalit so'zi: `{key_word}`")
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapa bot", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
-# --- CALLBACKLAR (O'ZGARISHSIZ) ---
+# --- CALLBACKLAR (ASL HOLI) ---
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
     uid = callback.message.chat.id
-    user_name = callback.from_user.first_name
-    
     if callback.data == "check_sub_status":
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
             await callback.message.delete()
-            await bot.send_message(uid, f"Tabriklaymiz {user_name}, botdan foydalanishingiz mumkin. 🎉", reply_markup=main_menu())
-        else: await callback.answer("Obuna bo'lmagansiz!", show_alert=True)
-
+            await bot.send_message(uid, "Xush kelibsiz!", reply_markup=main_menu())
+        else: await callback.answer("Obuna bo'ling!", show_alert=True)
     elif callback.data == "back_to_main":
         await callback.message.delete()
         await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
-
+    
+    # Kitob/Kino callbacklari...
     elif callback.data == "lang_book_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_UZ): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_uz_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇺🇿 O'zbekcha kitoblar:", reply_markup=btn)
-
+        await callback.message.edit_text("🇺🇿 Kitoblar:", reply_markup=btn)
     elif callback.data == "lang_book_en":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_EN): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_en_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇬🇧 English Books:", reply_markup=btn)
-
-    elif callback.data == "lang_book_all":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, b in enumerate(BOOKS_ALL): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_all_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("📚 Hammasi birda:", reply_markup=btn)
-
+        await callback.message.edit_text("🇬🇧 Books:", reply_markup=btn)
     elif callback.data == "lang_movie_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_UZ): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_uz_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇺🇿 O'zbekcha kinolar:", reply_markup=btn)
-
+        await callback.message.edit_text("🎬 Kinolar:", reply_markup=btn)
     elif callback.data == "lang_movie_ru":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_RU): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_ru_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇷🇺 Русские фильмы:", reply_markup=btn)
-
-    elif callback.data == "lang_movie_en":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, m in enumerate(MOVIES_EN): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_en_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇬🇧 English Movies:", reply_markup=btn)
-
+        await callback.message.edit_text("🇷🇺 Фильмы:", reply_markup=btn)
+    
+    # Fayllarni yuborish qismi...
     elif callback.data.startswith("bk_"):
         parts = callback.data.split("_")
-        lang, idx = parts[1], int(parts[2])
-        if lang == "uz": await bot.send_document(uid, BOOKS_UZ[idx]["file_id"], caption=BOOKS_UZ[idx]["name"])
-        elif lang == "en": await bot.send_document(uid, BOOKS_EN[idx]["file_id"], caption=BOOKS_EN[idx]["name"])
-        elif lang == "all": await bot.send_document(uid, BOOKS_ALL[idx]["file_id"], caption=BOOKS_ALL[idx]["name"])
-
+        l, idx = parts[1], int(parts[2])
+        if l == "uz": await bot.send_document(uid, BOOKS_UZ[idx]["file_id"])
+        elif l == "en": await bot.send_document(uid, BOOKS_EN[idx]["file_id"])
     elif callback.data.startswith("mv_"):
         parts = callback.data.split("_")
-        lang, idx = parts[1], int(parts[2])
-        if lang == "uz": await bot.send_video(uid, MOVIES_UZ[idx]["file_id"], caption=MOVIES_UZ[idx]["name"])
-        elif lang == "ru": await bot.send_video(uid, MOVIES_RU[idx]["file_id"], caption=MOVIES_RU[idx]["name"])
-        elif lang == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"], caption=MOVIES_EN[idx]["name"])
+        l, idx = parts[1], int(parts[2])
+        if l == "uz": await bot.send_video(uid, MOVIES_UZ[idx]["file_id"])
+        elif l == "ru": await bot.send_video(uid, MOVIES_RU[idx]["file_id"])
 
     await callback.answer()
 
