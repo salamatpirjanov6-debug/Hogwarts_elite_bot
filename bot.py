@@ -14,7 +14,8 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
 )
-from aiogram.utils import exceptions
+from aiogram.dispatcher import FSMContext
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 # --- SOZLAMALAR ---
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85Lh_XFsc-2n0L8O956T8Xw68Y9NqE")
@@ -24,13 +25,13 @@ ADMIN_ID = 7670992727
 SHLYAPA_USER = "elite_shlyapa"
 BOT_USERNAME = "Hogwarts_elite_bot"
 
-# GitHub-dagi rasm va shrift fayllari nomlari
 WELCOME_IMAGE_BASE = "hogwarts_blank.jpg"
 FONT_FILE = "font.ttf"
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
 # --- BAZA FAYLLARI ---
 HOUSES_FILE = "user_houses.json"
@@ -51,41 +52,35 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- FAQAT SHU JOYI TO'G'RILANDI: RASMGA ISM YOZISH FUNKSIYASI ---
+# --- TO'G'RILANGAN RASM FUNKSIYASI ---
 def create_welcome_image(user_name):
     try:
-        if not os.path.exists(WELCOME_IMAGE_BASE):
-            logging.error(f"Fayl topilmadi: {WELCOME_IMAGE_BASE}")
-            return None
-            
+        if not os.path.exists(WELCOME_IMAGE_BASE): return None
         base_img = Image.open(WELCOME_IMAGE_BASE).convert("RGB")
         draw = ImageDraw.Draw(base_img)
-        
-        # Railway-da shriftni aniq topish uchun to'liq yo'l (Path)
         font_path = os.path.join(os.getcwd(), FONT_FILE)
         
+        # O'zbekcha harflar uchun xavfsiz matn
+        clean_name = user_name.replace("‘", "'").replace("’", "'").replace("ʻ", "'").replace("`", "'")
+        
         try:
-            # 50 o'lcham Alice/Libertinus shriftlari uchun chiziq ustida ideal turadi
-            font = ImageFont.truetype(font_path, 50)
-        except Exception as e:
-            logging.warning(f"Shrift yuklashda xato: {e}. Standart ishlatiladi.")
+            font = ImageFont.truetype(font_path, 48)
+        except:
             font = ImageFont.load_default()
             
-        # Ismni chizish: (345, 425) koordinatasi chiziq ustiga tushadi
-        # fill=(25, 25, 25) - To'q qora/siyoh rang
-        draw.text((345, 425), user_name, font=font, fill=(25, 25, 25))
+        # Ism chiziq ustiga tushishi uchun koordinata (Siz yuborgan rasm asosida)
+        draw.text((280, 465), clean_name, font=font, fill=(30, 30, 30))
         
         img_byte_arr = io.BytesIO()
         img_byte_arr.name = 'welcome.jpg'
         base_img.save(img_byte_arr, format='JPEG', quality=95)
         img_byte_arr.seek(0)
         return img_byte_arr
-        
     except Exception as e:
-        logging.error(f"Rasm yaratishda umumiy xato: {e}")
+        logging.error(f"Rasmda xato: {e}")
         return None
 
-# --- QOLGAN HAMMA NARSA O'ZINGIZ YUBORGANDEK QAYTARILDI ---
+# --- BARCHA MA'LUMOTLAR RO'YXATI ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
@@ -106,9 +101,7 @@ BOOKS_EN = [
     {"name": "📖 7. Deathly Hallows", "file_id": "BQACAgUAAxkBAAIDRWnOlEOi6oyRRafs-Y9Yl1Lo19fjAAL8AwACn_N4VdOVKXxjV5MlOgQ"},
 ]
 
-BOOKS_ALL = [
-    {"name": "📚 All Books (1-7)", "file_id": "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ"}
-]
+BOOKS_ALL = [{"name": "📚 All Books (1-7)", "file_id": "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ"}]
 
 MOVIES_UZ = [
     {"name": "🎬 1. Hikmatlar toshi", "file_id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA"},
@@ -146,11 +139,10 @@ MOVIES_EN = [
 SORTING_MESSAGES = [
     "🤔 *Hmmm... qiyin, juda qiyin.* \nKo'ryapman, bu yerda aql ham yetarli, iste'dod ham... va-a-ay, qanday ulkan xohish!",
     "🧐 *Iye, bu qanday sirli qalb?* \nAql bovar qilmaydigan jasorat, biroz makr... Ha, sen Hogvarts tarixini o'zgartira olasan!",
-    "💭 *E-eh, men ko'ryapman...* \nSadoqat senda birinchi o'rinda. Mehnat qilishdan qo'rqmaysan, do'stlaring uchun joningni berishga tayyorsan.",
-    "🐍 *Qiziq, juda qiziq...* \nShon-shuhratga bo'lgan chanqoqlik, aqlli munosabat. Ha, sen buyuklikka loyiqsan!",
-    "🦁 *Bu yerda nima bor?* \nYuraging to'la qo'rqmaslik. Sen xavf-xatarga tik boqishni bilasan. Ha, jasurlik sening qoningda!"
+    "🦁 *Jasurlik sening qoningda!*"
 ]
 
+# --- MENYULAR ---
 def main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(KeyboardButton("📚 Kitoblar"), KeyboardButton("🎬 Kinolar"))
@@ -187,185 +179,121 @@ async def check_sub(user_id):
         return m_ch.status in ACTIVE_STATUSES, m_gr.status in ACTIVE_STATUSES
     except: return False, False
 
+# --- HANDLERLAR ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
-    if message.chat.type != 'private':
-        return await message.answer(".", reply_markup=ReplyKeyboardRemove())
     register_user(message.from_user.id)
     in_ch, in_gr = await check_sub(message.from_user.id)
     if not in_ch or not in_gr:
         btn = InlineKeyboardMarkup(row_width=1)
-        if not in_ch: btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
-        if not in_gr: btn.add(InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"))
-        btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
+        btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"),
+                InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"),
+                InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         await message.answer("❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
         return
-    await message.answer(f"Xush kelibsiz {message.from_user.first_name}! Bo'limni tanlang:", reply_markup=main_menu())
-
-@dp.message_handler(commands=["hat"])
-async def hat_group(message: types.Message):
-    uid = str(message.from_user.id)
-    data = load_data(HOUSES_FILE)
-    intro_text = random.choice(SORTING_MESSAGES)
-    if uid not in data:
-        fname = random.choice(list(houses_dict.keys()))
-        data[uid] = fname
-        save_data(HOUSES_FILE, data)
-    fname = data[uid]
-    key_word = houses_dict[fname]
-    house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
-    text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {house_emojis[fname]} **{fname}** {house_emojis[fname]}\n\n"
-            f"🔑 Kalit so'zi: `{key_word}`\n\n*(Nusxa olish uchun ustiga bosing)*")
-    await message.reply(text, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove())
-
-@dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
-async def set_welcome(message: types.Message):
-    await message.reply("Kutib olish xabari uchun matn, rasm yoki video yuboring. {name} so'zini ishlatsangiz link bo'ladi.")
-    dp.register_message_handler(save_welcome_step, user_id=ADMIN_ID, state=None, content_types=types.ContentTypes.ANY)
-
-async def save_welcome_step(message: types.Message):
-    text = message.caption if message.caption else message.text
-    if not text:
-        return await message.reply("Xatolik: Xabar matnini yozishingiz shart!")
-    file_id = "None"
-    file_type = "text"
-    if message.photo:
-        file_id = message.photo[-1].file_id
-        file_type = "photo"
-    elif message.video:
-        file_id = message.video.file_id
-        file_type = "video"
-    elif message.animation:
-        file_id = message.animation.file_id
-        file_type = "animation"
-    settings = load_data(WELCOME_FILE)
-    settings[str(message.chat.id)] = {"text": text, "file_id": file_id, "file_type": file_type}
-    save_data(WELCOME_FILE, settings)
-    dp.message_handlers.unregister(save_welcome_step)
-    await message.reply("✅ Kutib olish xabari va media saqlandi.")
+    await message.answer(f"Xush kelibsiz! Bo'limni tanlang:", reply_markup=main_menu())
 
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def welcome_handler(message: types.Message):
-    settings = load_data(WELCOME_FILE)
-    data = settings.get(str(message.chat.id))
-    if not data:
-        welcome_text = "Xush kelibsiz {name}!"
-        file_type = "text"
-    elif isinstance(data, str):
-        welcome_text = data
-        file_type = "text"
-    else:
-        welcome_text = data["text"]
-        file_type = data["file_type"]
-    btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start"))
     for user in message.new_chat_members:
         user_name = user.first_name
-        user_link = f'<a href="tg://user?id={user.id}">{user_name}</a>'
-        text = welcome_text.replace("{name}", user_link)
         photo = create_welcome_image(user_name)
-        try:
-            if photo:
-                await bot.send_photo(message.chat.id, photo, caption=text, reply_markup=btn, parse_mode="HTML")
-            else:
-                await message.answer(text, reply_markup=btn, parse_mode="HTML")
-        except:
+        text = f"Xush kelibsiz <a href='tg://user?id={user.id}'>{user_name}</a>!"
+        btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start"))
+        if photo: 
+            await bot.send_photo(message.chat.id, photo, caption=text, reply_markup=btn, parse_mode="HTML")
+        else: 
             await message.answer(text, reply_markup=btn, parse_mode="HTML")
 
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
-    text = message.get_args()
-    reply = message.reply_to_message
-    if not text and not reply: return
+    args = message.get_args()
+    if not args: return await message.answer("Format: /send matn")
     users = load_data(USERS_FILE)
-    u_list = list(users.keys())
-    status_msg = await message.answer(f"🚀 Yuborilmoqda...")
     count = 0
-    for uid in u_list:
+    for uid in users.keys():
         try:
-            if reply: await reply.copy_to(int(uid))
-            else: await bot.send_message(int(uid), text)
+            await bot.send_message(int(uid), args)
             count += 1
-            if count % 10 == 0: await asyncio.sleep(1)
+            if count % 25 == 0: await asyncio.sleep(1)
         except: continue
-    await status_msg.edit_text(f"✅ Yetkazildi: {count}")
+    await message.answer(f"✅ {count} ta foydalanuvchiga yuborildi.")
 
 @dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
 async def private_menus(message: types.Message):
-    if message.chat.type != 'private':
-        return await message.answer(".", reply_markup=ReplyKeyboardRemove())
     if message.text == "📚 Kitoblar":
-        await message.answer("Kitoblar uchun tilni tanlang:", reply_markup=book_lang_menu())
+        await message.answer("Kitoblar tilini tanlang:", reply_markup=book_lang_menu())
     elif message.text == "🎬 Kinolar":
-        await message.answer("Kinolar uchun tilni tanlang:", reply_markup=movie_lang_menu())
+        await message.answer("Kinolar tilini tanlang:", reply_markup=movie_lang_menu())
     elif message.text == "🎩 Saralovchi shlyapa":
-        uid = str(message.from_user.id)
-        data = load_data(HOUSES_FILE)
-        intro_text = random.choice(SORTING_MESSAGES)
-        if uid not in data:
-            fname = random.choice(list(houses_dict.keys()))
-            data[uid] = fname
-            save_data(HOUSES_FILE, data)
-        fname = data[uid]
-        key_word = houses_dict[fname]
-        house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
-        text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {house_emojis[fname]} **{fname}** {house_emojis[fname]}\n\n🔑 Kalit so'zi: `{key_word}`")
-        btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapa bot", url=f"https://t.me/{SHLYAPA_USER}"))
-        await message.answer(text, reply_markup=btn, parse_mode="Markdown")
+        await message.answer("Fakultetingizni aniqlash uchun shlyapa botiga o'ting:", 
+                             reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapa bot", url=f"https://t.me/{SHLYAPA_USER}")))
 
+# --- CALLBACKLAR (HAMMASI OCHIQ) ---
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
     uid = callback.message.chat.id
-    if callback.data == "check_sub_status":
+    d = callback.data
+    
+    if d == "check_sub_status":
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
             await callback.message.delete()
             await bot.send_message(uid, "Xush kelibsiz!", reply_markup=main_menu())
-        else: await callback.answer("Obuna bo'ling!", show_alert=True)
-    elif callback.data == "back_to_main":
-        await callback.message.delete()
-        await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
-    elif callback.data == "lang_book_uz":
+        else: await callback.answer("Obuna bo'lmadingiz!", show_alert=True)
+        
+    elif d == "back_to_main":
+        await callback.message.edit_text("Asosiy menyu:", reply_markup=main_menu())
+
+    # KITOOBLAR SECTION
+    elif d == "lang_book_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_UZ): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_uz_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇺🇿 Kitoblar:", reply_markup=btn)
-    elif callback.data == "lang_book_en":
+        await callback.message.edit_text("🇺🇿 O'zbekcha kitoblar:", reply_markup=btn)
+        
+    elif d == "lang_book_en":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_EN): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_en_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇬🇧 Books:", reply_markup=btn)
-    elif callback.data == "lang_book_all":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, b in enumerate(BOOKS_ALL): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_all_{i}"))
+        await callback.message.edit_text("🇬🇧 English books:", reply_markup=btn)
+        
+    elif d == "lang_book_all":
+        btn = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton(BOOKS_ALL[0]["name"], callback_data="bk_all_0"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("📚 Hammasi birda:", reply_markup=btn)
-    elif callback.data == "lang_movie_uz":
+
+    # KINOLAR SECTION
+    elif d == "lang_movie_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_UZ): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_uz_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🎬 Kinolar:", reply_markup=btn)
-    elif callback.data == "lang_movie_ru":
+        await callback.message.edit_text("🇺🇿 O'zbekcha kinolar:", reply_markup=btn)
+        
+    elif d == "lang_movie_ru":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_RU): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_ru_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇷🇺 Фильмы:", reply_markup=btn)
-    elif callback.data == "lang_movie_en":
+        await callback.message.edit_text("🇷🇺 Ruscha kinolar:", reply_markup=btn)
+        
+    elif d == "lang_movie_en":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_EN): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_en_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇬🇧 Movies:", reply_markup=btn)
-    elif callback.data.startswith("bk_"):
-        parts = callback.data.split("_")
-        l, idx = parts[1], int(parts[2])
-        if l == "uz": await bot.send_document(uid, BOOKS_UZ[idx]["file_id"])
-        elif l == "en": await bot.send_document(uid, BOOKS_EN[idx]["file_id"])
-        elif l == "all": await bot.send_document(uid, BOOKS_ALL[idx]["file_id"])
-    elif callback.data.startswith("mv_"):
-        parts = callback.data.split("_")
-        l, idx = parts[1], int(parts[2])
-        if l == "uz": await bot.send_video(uid, MOVIES_UZ[idx]["file_id"])
-        elif l == "ru": await bot.send_video(uid, MOVIES_RU[idx]["file_id"])
-        elif l == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"])
+        await callback.message.edit_text("🇬🇧 English movies:", reply_markup=btn)
+
+    # SENDING FILES
+    elif d.startswith("bk_"):
+        p = d.split("_")
+        if p[1] == "uz": await bot.send_document(uid, BOOKS_UZ[int(p[2])]["file_id"])
+        elif p[1] == "en": await bot.send_document(uid, BOOKS_EN[int(p[2])]["file_id"])
+        elif p[1] == "all": await bot.send_document(uid, BOOKS_ALL[0]["file_id"])
+        
+    elif d.startswith("mv_"):
+        p = d.split("_")
+        if p[1] == "uz": await bot.send_video(uid, MOVIES_UZ[int(p[2])]["file_id"])
+        elif p[1] == "ru": await bot.send_video(uid, MOVIES_RU[int(p[2])]["file_id"])
+        elif p[1] == "en": await bot.send_video(uid, MOVIES_EN[int(p[2])]["file_id"])
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
