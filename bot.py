@@ -1,3 +1,5 @@
+from PIL import Image, ImageDraw, ImageFont
+import io
 import json
 import logging
 import os
