@@ -1,5 +1,5 @@
 aiogram==2.25.1
 requests
 python-dotenv
-Pillow  
+
 
