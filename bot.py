@@ -17,12 +17,17 @@ from aiogram.types import (
 from aiogram.utils import exceptions
 
 # --- SOZLAMALAR ---
+# Bu yerga o'zingizning tokeningizni qo'ying
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85Lh_XFsc-2n0L8O956T8Xw68Y9NqE")
 CHANNEL = "@harry_potter_fans_uz"
 GROUP = "@hogwarts_elite"
 ADMIN_ID = 7670992727
 SHLYAPA_USER = "elite_shlyapa"
 BOT_USERNAME = "Hogwarts_elite_bot"
+
+# GitHub-dagi rasm va shrift fayllari nomlari
+WELCOME_IMAGE_BASE = "hogwarts_blank.jpg"
+FONT_FILE = "font.ttf"
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN)
@@ -46,6 +51,41 @@ def register_user(user_id):
     if str(user_id) not in users:
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
+
+# --- YANGI: RASMGA ISM YOZISH FUNKSIYASI ---
+def create_welcome_image(user_name):
+    try:
+        # 1. Asosiy rasmni ochish (GitHub-da turishi kerak)
+        if not os.path.exists(WELCOME_IMAGE_BASE):
+            logging.error(f"Fayl topilmadi: {WELCOME_IMAGE_BASE}")
+            return None
+            
+        base_img = Image.open(WELCOME_IMAGE_BASE)
+        draw = ImageDraw.Draw(base_img)
+        
+        # 2. Shriftni yuklash (font.ttf ni ham GitHub-ga yuklang)
+        try:
+            # 60 - bu shrift o'lchami. Agar ism katta bo'lsa, buni kamaytiring (masalan 40-50)
+            font = ImageFont.truetype(FONT_FILE, 60)
+        except:
+            # Agar font.ttf topilmasa, standart shriftni ishlatadi (chiroyli bo'lmaydi)
+            logging.warning(f"Shrift topilmadi: {FONT_FILE}, standart shrift ishlatiladi.")
+            font = ImageFont.load_default()
+            
+        # 3. Ismni rasmga chizish. (540, 600) - koordinatalar.
+        # "white" - matn rangi. anchor="ms" ismni o'sha nuqtaga nisbatan markazlashtiradi
+        draw.text((540, 600), user_name, font=font, fill="white", anchor="ms")
+        
+        # 4. Rasmni xotirada saqlash (Telegramga yuborish uchun)
+        img_byte_arr = io.BytesIO()
+        img_byte_arr.name = 'welcome.jpg'
+        base_img.save(img_byte_arr, format='JPEG')
+        img_byte_arr.seek(0)
+        return img_byte_arr
+        
+    except Exception as e:
+        logging.error(f"Rasmga ism yozishda xato: {e}")
+        return None
 
 # --- KITOOBLAR VA KINOLAR BAZASI (O'ZGARISHSIZ) ---
 BOOKS_UZ = [
@@ -184,12 +224,10 @@ async def hat_group(message: types.Message):
 # --- 3. KUTIB OLISH (YANGILANGAN: MEDIA VA LINK) ---
 @dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
 async def set_welcome(message: types.Message):
-    # Bu qism endi media yuborishni ham qo'llab-quvvatlaydi
     await message.reply("Kutib olish xabari uchun matn, rasm yoki video yuboring. {name} so'zini ishlatsangiz link bo'ladi.")
     dp.register_message_handler(save_welcome_step, user_id=ADMIN_ID, state=None, content_types=types.ContentTypes.ANY)
 
 async def save_welcome_step(message: types.Message):
-    # Admin matn yoki media yuborganda saqlaydi
     text = message.caption if message.caption else message.text
     if not text:
         return await message.reply("Xatolik: Xabar matnini yozishingiz shart!")
@@ -211,10 +249,10 @@ async def save_welcome_step(message: types.Message):
     settings[str(message.chat.id)] = {"text": text, "file_id": file_id, "file_type": file_type}
     save_data(WELCOME_FILE, settings)
     
-    # Handlerlarni tozalash (faqat bir marta saqlash uchun)
     dp.message_handlers.unregister(save_welcome_step)
     await message.reply("✅ Kutib olish xabari va media saqlandi.")
 
+# --- KUTIB OLISH (FAQAT SHU QISMI YANGILANDI - RASMGA ISM YOZISH UCHUN) ---
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def welcome_handler(message: types.Message):
     settings = load_data(WELCOME_FILE)
@@ -223,31 +261,34 @@ async def welcome_handler(message: types.Message):
     if not data:
         welcome_text = "Xush kelibsiz {name}!"
         file_type = "text"
-    elif isinstance(data, str): # Eski format bo'lsa
+    elif isinstance(data, str):
         welcome_text = data
         file_type = "text"
     else:
         welcome_text = data["text"]
         file_type = data["file_type"]
-        file_id = data["file_id"]
+        # file_id endi bu handlerda ishlatilmaydi, chunki biz yangi rasm yaratamiz
 
     btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start"))
     
     for user in message.new_chat_members:
         # ISMNI LINK QILISH (HTML)
-        user_link = f'<a href="tg://user?id={user.id}">{user.first_name}</a>'
+        user_name = user.first_name
+        user_link = f'<a href="tg://user?id={user.id}">{user_name}</a>'
         text = welcome_text.replace("{name}", user_link)
         
+        # Pillow yordamida har bir odam uchun alohida rasm yaratish
+        photo = create_welcome_image(user_name)
+        
         try:
-            if file_type == "photo":
-                await bot.send_photo(message.chat.id, file_id, caption=text, reply_markup=btn, parse_mode="HTML")
-            elif file_type == "video":
-                await bot.send_video(message.chat.id, file_id, caption=text, reply_markup=btn, parse_mode="HTML")
-            elif file_type == "animation":
-                await bot.send_animation(message.chat.id, file_id, caption=text, reply_markup=btn, parse_mode="HTML")
+            if photo:
+                # Agar Pillow rasmni muvaffaqiyatli yaratgan bo'lsa, o'shani yuboramiz
+                await bot.send_photo(message.chat.id, photo, caption=text, reply_markup=btn, parse_mode="HTML")
             else:
+                # Agar Pillow'da xato bo'lsa (rasm topilmasa), shunchaki matn yuboradi
                 await message.answer(text, reply_markup=btn, parse_mode="HTML")
         except:
+            # Har qanday boshqa xatolik bo'lsa ham matn yuboramiz
             await message.answer(text, reply_markup=btn, parse_mode="HTML")
 
 # --- REKLAMA VA BOSHQA FILTRLAR (O'ZGARISHSIZ) ---
@@ -354,4 +395,3 @@ async def callback_handler(callback: types.CallbackQuery):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
-    
