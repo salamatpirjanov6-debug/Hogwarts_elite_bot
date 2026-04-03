@@ -52,7 +52,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- YANGI: RASMGA ISM YOZISH FUNKSIYASI ---
+# --- YANGI: RASMGA ISM YOZISH FUNKSIYASI (TO'G'RILANGAN VARIANT) ---
 def create_welcome_image(user_name):
     try:
         # 1. Asosiy rasmni ochish (GitHub-da turishi kerak)
@@ -60,31 +60,34 @@ def create_welcome_image(user_name):
             logging.error(f"Fayl topilmadi: {WELCOME_IMAGE_BASE}")
             return None
             
-        base_img = Image.open(WELCOME_IMAGE_BASE)
+        # Rasmni ochish va rang formatini to'g'irlash (Pillow xatolar bermasligi uchun)
+        base_img = Image.open(WELCOME_IMAGE_BASE).convert("RGB")
         draw = ImageDraw.Draw(base_img)
         
-        # 2. Shriftni yuklash (font.ttf ni ham GitHub-ga yuklang)
+        # 2. Shriftni yuklash
         try:
-            # 60 - bu shrift o'lchami. Agar ism katta bo'lsa, buni kamaytiring (masalan 40-50)
-            font = ImageFont.truetype(FONT_FILE, 60)
-        except:
+            # 45 o'lcham o'sha chiziq uchun ideal
+            font = ImageFont.truetype(FONT_FILE, 45)
+        except Exception as e:
             # Agar font.ttf topilmasa, standart shriftni ishlatadi (chiroyli bo'lmaydi)
-            logging.warning(f"Shrift topilmadi: {FONT_FILE}, standart shrift ishlatiladi.")
+            logging.warning(f"Shrift yuklashda xato: {e}. Standart shrift ishlatiladi.")
             font = ImageFont.load_default()
             
-        # 3. Ismni rasmga chizish. (540, 600) - koordinatalar.
-        # "white" - matn rangi. anchor="ms" ismni o'sha nuqtaga nisbatan markazlashtiradi
-        draw.text((540, 600), user_name, font=font, fill="white", anchor="ms")
+        # 3. Ismni rasmga chizish. (Eng muhim joyi):
+        # (360, 430) - Muhtaram so'zi yonidagi bo'sh chiziq usti
+        # fill=(0, 0, 0) - Mutlaq qora rang (oq kvadratlar chiqmasligi va sariq fonda ko'rinishi uchun)
+        # anchor parametrini olib tashladik, bu oq kvadratlar xatosini yo'qotadi
+        draw.text((360, 430), user_name, font=font, fill=(0, 0, 0))
         
         # 4. Rasmni xotirada saqlash (Telegramga yuborish uchun)
         img_byte_arr = io.BytesIO()
         img_byte_arr.name = 'welcome.jpg'
-        base_img.save(img_byte_arr, format='JPEG')
+        base_img.save(img_byte_arr, format='JPEG', quality=95)
         img_byte_arr.seek(0)
         return img_byte_arr
         
     except Exception as e:
-        logging.error(f"Rasmga ism yozishda xato: {e}")
+        logging.error(f"Rasm yaratishda umumiy xato: {e}")
         return None
 
 # --- KITOOBLAR VA KINOLAR BAZASI (O'ZGARISHSIZ) ---
@@ -221,7 +224,7 @@ async def hat_group(message: types.Message):
             f"🔑 Kalit so'zi: `{key_word}`\n\n*(Nusxa olish uchun ustiga bosing)*")
     await message.reply(text, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove())
 
-# --- 3. KUTIB OLISH (YANGILANGAN: MEDIA VA LINK) ---
+# --- 3. KUTIB OLISH ---
 @dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
 async def set_welcome(message: types.Message):
     await message.reply("Kutib olish xabari uchun matn, rasm yoki video yuboring. {name} so'zini ishlatsangiz link bo'ladi.")
@@ -252,7 +255,7 @@ async def save_welcome_step(message: types.Message):
     dp.message_handlers.unregister(save_welcome_step)
     await message.reply("✅ Kutib olish xabari va media saqlandi.")
 
-# --- KUTIB OLISH (FAQAT SHU QISMI YANGILANDI - RASMGA ISM YOZISH UCHUN) ---
+# --- KUTIB OLISH ---
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def welcome_handler(message: types.Message):
     settings = load_data(WELCOME_FILE)
@@ -267,7 +270,6 @@ async def welcome_handler(message: types.Message):
     else:
         welcome_text = data["text"]
         file_type = data["file_type"]
-        # file_id endi bu handlerda ishlatilmaydi, chunki biz yangi rasm yaratamiz
 
     btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start"))
     
@@ -384,14 +386,13 @@ async def callback_handler(callback: types.CallbackQuery):
         if l == "uz": await bot.send_document(uid, BOOKS_UZ[idx]["file_id"])
         elif l == "en": await bot.send_document(uid, BOOKS_EN[idx]["file_id"])
         elif l == "all": await bot.send_document(uid, BOOKS_ALL[idx]["file_id"])
+
     elif callback.data.startswith("mv_"):
         parts = callback.data.split("_")
         l, idx = parts[1], int(parts[2])
         if l == "uz": await bot.send_video(uid, MOVIES_UZ[idx]["file_id"])
         elif l == "ru": await bot.send_video(uid, MOVIES_RU[idx]["file_id"])
         elif l == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"])
-
-    await callback.answer()
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
