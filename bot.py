@@ -17,7 +17,6 @@ from aiogram.types import (
 from aiogram.utils import exceptions
 
 # --- SOZLAMALAR ---
-# Bu yerga o'zingizning tokeningizni qo'ying
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85Lh_XFsc-2n0L8O956T8Xw68Y9NqE")
 CHANNEL = "@harry_potter_fans_uz"
 GROUP = "@hogwarts_elite"
@@ -52,34 +51,30 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- YANGI: RASMGA ISM YOZISH FUNKSIYASI (TO'G'RILANGAN VARIANT) ---
+# --- FAQAT SHU JOYI TO'G'RILANDI: RASMGA ISM YOZISH FUNKSIYASI ---
 def create_welcome_image(user_name):
     try:
-        # 1. Asosiy rasmni ochish (GitHub-da turishi kerak)
         if not os.path.exists(WELCOME_IMAGE_BASE):
             logging.error(f"Fayl topilmadi: {WELCOME_IMAGE_BASE}")
             return None
             
-        # Rasmni ochish va rang formatini to'g'irlash (Pillow xatolar bermasligi uchun)
         base_img = Image.open(WELCOME_IMAGE_BASE).convert("RGB")
         draw = ImageDraw.Draw(base_img)
         
-        # 2. Shriftni yuklash
+        # Railway-da shriftni aniq topish uchun to'liq yo'l (Path)
+        font_path = os.path.join(os.getcwd(), FONT_FILE)
+        
         try:
-            # 45 o'lcham o'sha chiziq uchun ideal
-            font = ImageFont.truetype(FONT_FILE, 45)
+            # 50 o'lcham Alice/Libertinus shriftlari uchun chiziq ustida ideal turadi
+            font = ImageFont.truetype(font_path, 50)
         except Exception as e:
-            # Agar font.ttf topilmasa, standart shriftni ishlatadi (chiroyli bo'lmaydi)
-            logging.warning(f"Shrift yuklashda xato: {e}. Standart shrift ishlatiladi.")
+            logging.warning(f"Shrift yuklashda xato: {e}. Standart ishlatiladi.")
             font = ImageFont.load_default()
             
-        # 3. Ismni rasmga chizish. (Eng muhim joyi):
-        # (360, 430) - Muhtaram so'zi yonidagi bo'sh chiziq usti
-        # fill=(0, 0, 0) - Mutlaq qora rang (oq kvadratlar chiqmasligi va sariq fonda ko'rinishi uchun)
-        # anchor parametrini olib tashladik, bu oq kvadratlar xatosini yo'qotadi
-        draw.text((360, 430), user_name, font=font, fill=(0, 0, 0))
+        # Ismni chizish: (345, 425) koordinatasi chiziq ustiga tushadi
+        # fill=(25, 25, 25) - To'q qora/siyoh rang
+        draw.text((345, 425), user_name, font=font, fill=(25, 25, 25))
         
-        # 4. Rasmni xotirada saqlash (Telegramga yuborish uchun)
         img_byte_arr = io.BytesIO()
         img_byte_arr.name = 'welcome.jpg'
         base_img.save(img_byte_arr, format='JPEG', quality=95)
@@ -90,7 +85,7 @@ def create_welcome_image(user_name):
         logging.error(f"Rasm yaratishda umumiy xato: {e}")
         return None
 
-# --- KITOOBLAR VA KINOLAR BAZASI (O'ZGARISHSIZ) ---
+# --- QOLGAN HAMMA NARSA O'ZINGIZ YUBORGANDEK QAYTARILDI ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
@@ -156,7 +151,6 @@ SORTING_MESSAGES = [
     "🦁 *Bu yerda nima bor?* \nYuraging to'la qo'rqmaslik. Sen xavf-xatarga tik boqishni bilasan. Ha, jasurlik sening qoningda!"
 ]
 
-# --- MENYULAR (O'ZGARISHSIZ) ---
 def main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(KeyboardButton("📚 Kitoblar"), KeyboardButton("🎬 Kinolar"))
@@ -224,7 +218,6 @@ async def hat_group(message: types.Message):
             f"🔑 Kalit so'zi: `{key_word}`\n\n*(Nusxa olish uchun ustiga bosing)*")
     await message.reply(text, parse_mode="Markdown", reply_markup=ReplyKeyboardRemove())
 
-# --- 3. KUTIB OLISH ---
 @dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
 async def set_welcome(message: types.Message):
     await message.reply("Kutib olish xabari uchun matn, rasm yoki video yuboring. {name} so'zini ishlatsangiz link bo'ladi.")
@@ -234,10 +227,8 @@ async def save_welcome_step(message: types.Message):
     text = message.caption if message.caption else message.text
     if not text:
         return await message.reply("Xatolik: Xabar matnini yozishingiz shart!")
-
     file_id = "None"
     file_type = "text"
-    
     if message.photo:
         file_id = message.photo[-1].file_id
         file_type = "photo"
@@ -247,20 +238,16 @@ async def save_welcome_step(message: types.Message):
     elif message.animation:
         file_id = message.animation.file_id
         file_type = "animation"
-
     settings = load_data(WELCOME_FILE)
     settings[str(message.chat.id)] = {"text": text, "file_id": file_id, "file_type": file_type}
     save_data(WELCOME_FILE, settings)
-    
     dp.message_handlers.unregister(save_welcome_step)
     await message.reply("✅ Kutib olish xabari va media saqlandi.")
 
-# --- KUTIB OLISH ---
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def welcome_handler(message: types.Message):
     settings = load_data(WELCOME_FILE)
     data = settings.get(str(message.chat.id))
-    
     if not data:
         welcome_text = "Xush kelibsiz {name}!"
         file_type = "text"
@@ -270,30 +257,20 @@ async def welcome_handler(message: types.Message):
     else:
         welcome_text = data["text"]
         file_type = data["file_type"]
-
     btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start"))
-    
     for user in message.new_chat_members:
-        # ISMNI LINK QILISH (HTML)
         user_name = user.first_name
         user_link = f'<a href="tg://user?id={user.id}">{user_name}</a>'
         text = welcome_text.replace("{name}", user_link)
-        
-        # Pillow yordamida har bir odam uchun alohida rasm yaratish
         photo = create_welcome_image(user_name)
-        
         try:
             if photo:
-                # Agar Pillow rasmni muvaffaqiyatli yaratgan bo'lsa, o'shani yuboramiz
                 await bot.send_photo(message.chat.id, photo, caption=text, reply_markup=btn, parse_mode="HTML")
             else:
-                # Agar Pillow'da xato bo'lsa (rasm topilmasa), shunchaki matn yuboradi
                 await message.answer(text, reply_markup=btn, parse_mode="HTML")
         except:
-            # Har qanday boshqa xatolik bo'lsa ham matn yuboramiz
             await message.answer(text, reply_markup=btn, parse_mode="HTML")
 
-# --- REKLAMA VA BOSHQA FILTRLAR (O'ZGARISHSIZ) ---
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
     text = message.get_args()
@@ -347,7 +324,6 @@ async def callback_handler(callback: types.CallbackQuery):
     elif callback.data == "back_to_main":
         await callback.message.delete()
         await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
-    
     elif callback.data == "lang_book_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_UZ): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_uz_{i}"))
@@ -363,7 +339,6 @@ async def callback_handler(callback: types.CallbackQuery):
         for i, b in enumerate(BOOKS_ALL): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_all_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("📚 Hammasi birda:", reply_markup=btn)
-
     elif callback.data == "lang_movie_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_UZ): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_uz_{i}"))
@@ -379,14 +354,12 @@ async def callback_handler(callback: types.CallbackQuery):
         for i, m in enumerate(MOVIES_EN): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_en_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("🇬🇧 Movies:", reply_markup=btn)
-
     elif callback.data.startswith("bk_"):
         parts = callback.data.split("_")
         l, idx = parts[1], int(parts[2])
         if l == "uz": await bot.send_document(uid, BOOKS_UZ[idx]["file_id"])
         elif l == "en": await bot.send_document(uid, BOOKS_EN[idx]["file_id"])
         elif l == "all": await bot.send_document(uid, BOOKS_ALL[idx]["file_id"])
-
     elif callback.data.startswith("mv_"):
         parts = callback.data.split("_")
         l, idx = parts[1], int(parts[2])
@@ -394,5 +367,5 @@ async def callback_handler(callback: types.CallbackQuery):
         elif l == "ru": await bot.send_video(uid, MOVIES_RU[idx]["file_id"])
         elif l == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"])
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
