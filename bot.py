@@ -29,6 +29,7 @@ dp = Dispatcher(bot)
 HOUSES_FILE = "user_houses.json"
 USERS_FILE = "bot_users.json"
 WELCOME_FILE = "welcome_settings.json"
+FORCED_CHANNELS_FILE = "forced_channels.json" # Yangi qo'shildi
 
 def load_data(file):
     if os.path.exists(file):
@@ -208,6 +209,18 @@ async def ban_user(message: types.Message):
         await message.answer(f"🚫 <b>{message.reply_to_message.from_user.first_name}</b> haydaldi.\n📄 <b>Sabab:</b> {reason}", parse_mode="HTML")
     except Exception as e: await message.reply(f"Xatolik: {e}")
 
+# --- YANGI: MAJBURIY OBUNA SOZLAMALARI ---
+@dp.message_handler(commands=["setchannel"], user_id=ADMIN_ID)
+async def set_forced_channel(message: types.Message):
+    args = message.get_args()
+    if not args or not args.startswith("@"):
+        return await message.reply("⚠️ Foydalanish: `/setchannel @username`", parse_mode="Markdown")
+    
+    data = load_data(FORCED_CHANNELS_FILE)
+    data[str(message.chat.id)] = args
+    save_data(FORCED_CHANNELS_FILE, data)
+    await message.reply(f"✅ Ushbu guruh uchun majburiy kanal {args} qilib belgilandi.")
+
 # --- START BUYRUG'I (ISM BILAN KUTIB OLISH QO'SHILDI) ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
@@ -223,11 +236,9 @@ async def start_cmd(message: types.Message):
         if not in_ch: btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
         if not in_gr: btn.add(InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"))
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
-        # Obuna bo'lmaganda ham ism bilan kutib oladi
         await message.answer(f"Salom {message.from_user.first_name}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
         return
     
-    # Obuna bo'lganda ism bilan kutib oladi
     await message.answer(f"Xush kelibsiz {message.from_user.first_name}! ✨\nHogvarts olamiga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu())
 
 # --- ASOSIY HANDLERLAR ---
@@ -257,7 +268,6 @@ async def callback_handler(callback: types.CallbackQuery):
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
             await callback.message.delete()
-            # Tekshirish tugmasidan keyin ham ism bilan kutib oladi
             await bot.send_message(uid, f"Xush kelibsiz {callback.from_user.first_name}! ✨", reply_markup=main_menu())
         else: await callback.answer("Obuna bo'ling!", show_alert=True)
     elif callback.data == "back_to_main":
@@ -336,6 +346,33 @@ async def save_welcome_step(message: types.Message):
     settings = load_data(WELCOME_FILE); settings[str(message.chat.id)] = {"text": text, "file_id": f_id, "file_type": f_type}
     save_data(WELCOME_FILE, settings); dp.message_handlers.unregister(save_welcome_step)
     await message.reply("✅ Saqlandi.")
+
+# --- GURUHDAGI HABARLARNI TEKSHIRISH (MAJBURIY OBUNA) ---
+@dp.message_handler(lambda m: m.chat.type in ['group', 'supergroup'])
+async def check_group_sub(message: types.Message):
+    # Adminlar va Botning o'zi tekshirilmaydi
+    member = await message.chat.get_member(message.from_user.id)
+    if member.is_chat_admin() or message.from_user.is_bot:
+        return
+
+    # Ushbu guruh uchun majburiy kanal sozlanganmi?
+    channels_data = load_data(FORCED_CHANNELS_FILE)
+    target_channel = channels_data.get(str(message.chat.id))
+
+    if target_channel:
+        try:
+            check = await bot.get_chat_member(target_channel, message.from_user.id)
+            if check.status not in ACTIVE_STATUSES:
+                await message.delete()
+                warning = await message.answer(
+                    f"⚠️ <a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>, "
+                    f"guruhda yozish uchun {target_channel} kanaliga obuna bo'lishingiz shart!",
+                    parse_mode="HTML"
+                )
+                await asyncio.sleep(10)
+                await warning.delete()
+        except Exception as e:
+            logging.error(f"Tekshiruvda xatolik: {e}")
 
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def welcome_handler(message: types.Message):
