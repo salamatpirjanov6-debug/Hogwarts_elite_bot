@@ -73,7 +73,7 @@ MOVIES_UZ = [
     {"name": "🎬 1. Hikmatlar toshi", "file_id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA", "caption": "1. 🎬 Nomi: HP 1: Hikmatlar toshi\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:32:22\n\nKanal: @harry_potter_fans_uz"},
     {"name": "🎬 2. Maxfiy hujra", "file_id": "BAACAgIAAxkBAAOFacu0BPXsr3WF3yYGmJHdjVeDjSMAAmSFAALhnOhKpL77RQyPlaE6BA", "caption": "2. 🎬 Nomi: HP 2: Maxfiy hujra\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:54:25\n\nKanal: @harry_potter_fans_uz"},
     {"name": "🎬 3. Azkoban maxbusi", "file_id": "BAACAgIAAxkBAAOHacu0W-SHgaTmaKyMu7N7S4D-9NQAAn6FAALhnOhKpYQqLyzBd-k6BA", "caption": "3. 🎬 Nomi: HP 3: Azkoban maxbusi\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:21:43\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "🎬 4. Alanga kubogi", "file_id": "BAACAgIAAxkBAAOJacu1AoUKWQUInEPM0DGXvSZhueUAAqmFAALhnOhKZF9wiu0Drs6BA", "caption": "4. 🎬 Nomi: HP 4: Alanga kubogi\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:31:27\n\nKanal: @harry_potter_fans_uz"},
+    {"name": "🎬 4. Alanga kubogi", "file_id": "BAACAgIAAxkBAAOJacu1AoUKWQUInEPM0DGXvSZhueUAAqmFAALhnOhKZfF9wiu0Drs6BA", "caption": "4. 🎬 Nomi: HP 4: Alanga kubogi\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:31:27\n\nKanal: @harry_potter_fans_uz"},
     {"name": "🎬 5. Feniks jamiyati", "file_id": "BAACAgIAAxkBAAOHacu0W-SHgaTmaKyMu7N7S4D-9NQAAn6FAALhnOhKpYQqLyzBd-k6BA", "caption": "5. 🎬 Nomi: HP 5: Feniks jamiyati\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:18:15\n\nKanal: @harry_potter_fans_uz"},
     {"name": "🎬 6. Tilsim Shahzoda", "file_id": "BAACAgIAAxkBAAONacu1kktAejSVYq9GM3xmHXGzrfAAAoyFAALhnOhKrgZBW8bL1Ws6BA", "caption": "6. 🎬 Nomi: HP 6: Tilsim Shahzoda\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:33:32\n\nKanal: @harry_potter_fans_uz"},
     {"name": "🎬 7. Ajal tuhfasi 1", "file_id": "BAACAgIAAxkBAAOPacu1qaZL-FLQaWMNmAbS1P6B-DUAApeFAALhnOhKF_fANiYvpAk6BA", "caption": "7. 🎬 Nomi: HP 7: Ajal tuhfasi 1-qism\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:26:06\n\nKanal: @harry_potter_fans_uz"},
@@ -212,38 +212,6 @@ async def set_forced_channel(message: types.Message):
     save_data(FORCED_CHANNELS_FILE, data)
     await message.reply(f"✅ Ushbu guruh uchun majburiy kanal {args} qilib belgilandi.")
 
-# --- 1. YANGI A'ZONI KUTIB OLISH (WELCOME HANDLER - BIRINCHI TARTIBDA) ---
-@dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
-async def welcome_new_member(message: types.Message):
-    settings = load_data(WELCOME_FILE)
-    chat_id = str(message.chat.id)
-    if chat_id in settings:
-        welcome = settings[chat_id]
-        text = welcome['text']
-        user_link = f"<a href='tg://user?id={message.new_chat_members[0].id}'>{message.new_chat_members[0].first_name}</a>"
-        caption = text.replace("{name}", user_link)
-        f_id = welcome['file_id']
-        f_type = welcome['file_type']
-        
-        # --- WELCOME TUGMALARI ---
-        btn = InlineKeyboardMarkup(row_width=1)
-        btn.add(
-            InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=shlyapa"),
-            InlineKeyboardButton("📢 Kanalimiz", url=f"https://t.me/{CHANNEL[1:]}")
-        )
-        
-        try:
-            if f_type == "photo":
-                await bot.send_photo(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            elif f_type == "video":
-                await bot.send_video(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            elif f_type == "animation":
-                await bot.send_animation(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            else:
-                await bot.send_message(message.chat.id, caption, reply_markup=btn, parse_mode="HTML")
-        except Exception as e:
-            logging.error(f"Welcome error: {e}")
-
 # --- START BUYRUG'I ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
@@ -261,6 +229,42 @@ async def start_cmd(message: types.Message):
         return
     user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
     await message.answer(f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
+
+# --- 2. YANGI A'ZONI KUTIB OLISH (WELCOME HANDLER) ---
+@dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
+async def welcome_new_member(message: types.Message):
+    settings = load_data(WELCOME_FILE)
+    chat_id = str(message.chat.id)
+    
+    # Yangi kelgan foydalanuvchini ro'yxatga olamiz
+    for new_member in message.new_chat_members:
+        register_user(new_member.id)
+        
+    if chat_id in settings:
+        welcome = settings[chat_id]
+        text = welcome['text']
+        user_link = f"<a href='tg://user?id={message.new_chat_members[0].id}'>{message.new_chat_members[0].first_name}</a>"
+        caption = text.replace("{name}", user_link)
+        f_id = welcome['file_id']
+        f_type = welcome['file_type']
+        
+        btn = InlineKeyboardMarkup(row_width=1)
+        btn.add(
+            InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=shlyapa"),
+            InlineKeyboardButton("📢 Kanalimiz", url=f"https://t.me/{CHANNEL[1:]}")
+        )
+        
+        try:
+            if f_type == "photo":
+                await bot.send_photo(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
+            elif f_type == "video":
+                await bot.send_video(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
+            elif f_type == "animation":
+                await bot.send_animation(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
+            else:
+                await bot.send_message(message.chat.id, caption, reply_markup=btn, parse_mode="HTML")
+        except Exception as e:
+            logging.error(f"Welcome error: {e}")
 
 # --- ASOSIY HANDLERLAR ---
 @dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
@@ -367,8 +371,12 @@ async def save_welcome_step(message: types.Message):
 # --- GURUHDAGI HABARLARNI TEKSHIRISH (MAJBURIY OBUNA) ---
 @dp.message_handler(lambda m: m.chat.type in ['group', 'supergroup'])
 async def check_group_sub(message: types.Message):
+    # MUHIM: Welcome (yangi a'zo) xabarlarini o'chirib tashlamaslik uchun tekshiramiz
+    if message.content_type != types.ContentType.TEXT: return 
+
     member = await message.chat.get_member(message.from_user.id)
     if member.is_chat_admin() or message.from_user.is_bot: return
+    
     channels_data = load_data(FORCED_CHANNELS_FILE)
     target_channel = channels_data.get(str(message.chat.id))
     if target_channel:
@@ -376,7 +384,6 @@ async def check_group_sub(message: types.Message):
             check = await bot.get_chat_member(target_channel, message.from_user.id)
             if check.status not in ACTIVE_STATUSES:
                 await message.delete()
-                # Foydalanuvchi ismiga link qo'shildi
                 user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
                 btn = InlineKeyboardMarkup().add(InlineKeyboardButton("📢 Kanalga obuna bo'lish", url=f"https://t.me/{target_channel[1:]}"))
                 await message.answer(f"⚠️ {user_link}, xabar yuborish uchun kanalga a'zo bo'ling!", reply_markup=btn, parse_mode="HTML")
