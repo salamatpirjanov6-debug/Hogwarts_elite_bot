@@ -14,6 +14,7 @@ from aiogram.types import (
 )
 
 # --- SOZLAMALAR ---
+# Tokeningizni va ID'larni o'z joyida qoldirdim
 API_TOKEN = "7718919427:AAH0p85Lh_XFsc-2n0L8O956T8Xw68Y9NqE"
 CHANNEL = "@harry_potter_fans_uz"
 GROUP = "@hogwarts_elite"
@@ -44,7 +45,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- 1. KITOOBLAR BAZASI (TO'LIQ) ---
+# --- 1. KITOOBLAR BAZASI (HECH NIMA TUSHIB QOLMADI) ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
@@ -67,7 +68,7 @@ BOOKS_EN = [
 
 BOOKS_ALL = [{"name": "📚 All Books (1-7)", "file_id": "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ"}]
 
-# --- 2. KINOLAR BAZASI (TO'LIQ) ---
+# --- 2. KINOLAR BAZASI (TO'LIQ VA ASL HOLIDA) ---
 MOVIES_UZ = [
     {"name": "🎬 1. Hikmatlar toshi", "file_id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA"},
     {"name": "🎬 2. Maxfiy hujra", "file_id": "BAACAgIAAxkBAAOFacu0BPXsr3WF3yYGmJHdjVeDjSMAAmSFAALhnOhKpL77RQyPlaE6BA"},
@@ -193,7 +194,7 @@ async def ban_user(message: types.Message):
         await message.answer(f"🚫 <b>{message.reply_to_message.from_user.first_name}</b> haydaldi.")
     except: await message.reply("Xatolik!")
 
-# --- START BUYRUG'I (TO'G'RILANGAN ISM BILAN) ---
+# --- START BUYRUG'I (SO'RALGAN ISM BILAN KUTIB OLISH) ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     if message.chat.type != 'private':
@@ -203,15 +204,16 @@ async def start_cmd(message: types.Message):
     register_user(message.from_user.id)
     in_ch, in_gr = await check_sub(message.from_user.id)
     
-    # Ism bilan kutib olish mantiqi
     if not in_ch or not in_gr:
         btn = InlineKeyboardMarkup(row_width=1)
         if not in_ch: btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
         if not in_gr: btn.add(InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"))
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
+        # Majburiy obunada ism bilan kutib olish
         await message.answer(f"Salom {message.from_user.first_name}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
         return
     
+    # Asosiy menyuda ism bilan kutib olish
     await message.answer(f"Xush kelibsiz {message.from_user.first_name}! ✨\nHogvarts olamiga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu())
 
 # --- ASOSIY HANDLERLAR ---
@@ -245,7 +247,7 @@ async def callback_handler(callback: types.CallbackQuery):
     elif callback.data == "back_to_main":
         await callback.message.delete(); await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
     
-    # Kitoblar va Kinolar callback mantiqi
+    # Kitoblar va Kinolar callback mantiqi (Asl holicha qoldi)
     elif callback.data == "lang_book_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_UZ): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_uz_{i}"))
