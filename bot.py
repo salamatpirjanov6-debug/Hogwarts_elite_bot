@@ -227,7 +227,9 @@ async def start_cmd(message: types.Message):
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         await message.answer(f"Salom {message.from_user.first_name}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
         return
-    await message.answer(f"Xush kelibsiz {message.from_user.first_name}! ✨\nHogvarts olamiga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu())
+    # Ismga profil linki qo'shildi va matn yangilandi
+    user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
+    await message.answer(f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
 
 # --- ASOSIY HANDLERLAR ---
 @dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
@@ -249,6 +251,31 @@ async def private_menus(message: types.Message):
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
+# --- YANGI A'ZONI KUTIB OLISH (WELCOME HANDLER) ---
+@dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
+async def welcome_new_member(message: types.Message):
+    settings = load_data(WELCOME_FILE)
+    chat_id = str(message.chat.id)
+    if chat_id in settings:
+        welcome = settings[chat_id]
+        text = welcome['text']
+        # {name} o'rniga yangi foydalanuvchi linkini qo'yish
+        user_link = f"<a href='tg://user?id={message.new_chat_members[0].id}'>{message.new_chat_members[0].first_name}</a>"
+        caption = text.replace("{name}", user_link)
+        f_id = welcome['file_id']
+        f_type = welcome['file_type']
+        try:
+            if f_type == "photo":
+                await bot.send_photo(message.chat.id, f_id, caption=caption, parse_mode="HTML")
+            elif f_type == "video":
+                await bot.send_video(message.chat.id, f_id, caption=caption, parse_mode="HTML")
+            elif f_type == "animation":
+                await bot.send_animation(message.chat.id, f_id, caption=caption, parse_mode="HTML")
+            else:
+                await bot.send_message(message.chat.id, caption, parse_mode="HTML")
+        except Exception as e:
+            logging.error(f"Welcome error: {e}")
+
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
     uid = callback.message.chat.id
@@ -256,7 +283,9 @@ async def callback_handler(callback: types.CallbackQuery):
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
             await callback.message.delete()
-            await bot.send_message(uid, f"Xush kelibsiz {callback.from_user.first_name}! ✨", reply_markup=main_menu())
+            # Ismga link bu yerga ham qo'shildi
+            user_link = f"<a href='tg://user?id={callback.from_user.id}'>{callback.from_user.first_name}</a>"
+            await bot.send_message(uid, f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
         else: await callback.answer("Obuna bo'ling!", show_alert=True)
     elif callback.data == "back_to_main":
         await callback.message.delete(); await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
