@@ -29,7 +29,6 @@ dp = Dispatcher(bot)
 HOUSES_FILE = "user_houses.json"
 USERS_FILE = "bot_users.json"
 WELCOME_FILE = "welcome_settings.json"
-FORCED_CHANNELS_FILE = "forced_channels.json"
 
 def load_data(file):
     if os.path.exists(file):
@@ -201,17 +200,6 @@ async def ban_user(message: types.Message):
         await message.answer(f"🚫 <b>{message.reply_to_message.from_user.first_name}</b> haydaldi.\n📄 <b>Sabab:</b> {reason}", parse_mode="HTML")
     except Exception as e: await message.reply(f"Xatolik: {e}")
 
-# --- MAJBURIY OBUNA SOZLAMALARI ---
-@dp.message_handler(commands=["setchannel"], user_id=ADMIN_ID)
-async def set_forced_channel(message: types.Message):
-    args = message.get_args()
-    if not args or not args.startswith("@"):
-        return await message.reply("⚠️ Foydalanish: `/setchannel @username`", parse_mode="Markdown")
-    data = load_data(FORCED_CHANNELS_FILE)
-    data[str(message.chat.id)] = args
-    save_data(FORCED_CHANNELS_FILE, data)
-    await message.reply(f"✅ Ushbu guruh uchun majburiy kanal {args} qilib belgilandi.")
-
 # --- START BUYRUG'I ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
@@ -230,41 +218,41 @@ async def start_cmd(message: types.Message):
     user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
     await message.answer(f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
 
-# --- 2. YANGI A'ZONI KUTIB OLISH (WELCOME HANDLER) ---
+# --- 2. YANGI A'ZONI KUTIB OLISH (HAMMANI, SHU JUMIDAN BOTNI HAM KUTIB OLADI) ---
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def welcome_new_member(message: types.Message):
+    # Endi hech qanday ID tekshiruvi yo'q - hamma kutib olinadi
     settings = load_data(WELCOME_FILE)
     chat_id = str(message.chat.id)
     
-    # Yangi kelgan foydalanuvchini ro'yxatga olamiz
     for new_member in message.new_chat_members:
         register_user(new_member.id)
         
-    if chat_id in settings:
-        welcome = settings[chat_id]
-        text = welcome['text']
-        user_link = f"<a href='tg://user?id={message.new_chat_members[0].id}'>{message.new_chat_members[0].first_name}</a>"
-        caption = text.replace("{name}", user_link)
-        f_id = welcome['file_id']
-        f_type = welcome['file_type']
-        
-        btn = InlineKeyboardMarkup(row_width=1)
-        btn.add(
-            InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=shlyapa"),
-            InlineKeyboardButton("📢 Kanalimiz", url=f"https://t.me/{CHANNEL[1:]}")
-        )
-        
-        try:
-            if f_type == "photo":
-                await bot.send_photo(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            elif f_type == "video":
-                await bot.send_video(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            elif f_type == "animation":
-                await bot.send_animation(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            else:
-                await bot.send_message(message.chat.id, caption, reply_markup=btn, parse_mode="HTML")
-        except Exception as e:
-            logging.error(f"Welcome error: {e}")
+        if chat_id in settings:
+            welcome = settings[chat_id]
+            text = welcome['text']
+            user_link = f"<a href='tg://user?id={new_member.id}'>{new_member.first_name}</a>"
+            caption = text.replace("{name}", user_link)
+            f_id = welcome['file_id']
+            f_type = welcome['file_type']
+            
+            btn = InlineKeyboardMarkup(row_width=1)
+            btn.add(
+                InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=shlyapa"),
+                InlineKeyboardButton("📢 Kanalimiz", url=f"https://t.me/{CHANNEL[1:]}")
+            )
+            
+            try:
+                if f_type == "photo":
+                    await bot.send_photo(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
+                elif f_type == "video":
+                    await bot.send_video(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
+                elif f_type == "animation":
+                    await bot.send_animation(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
+                else:
+                    await bot.send_message(message.chat.id, caption, reply_markup=btn, parse_mode="HTML")
+            except Exception as e:
+                logging.error(f"Welcome error: {e}")
 
 # --- ASOSIY HANDLERLAR ---
 @dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
@@ -367,28 +355,6 @@ async def save_welcome_step(message: types.Message):
     settings = load_data(WELCOME_FILE); settings[str(message.chat.id)] = {"text": text, "file_id": f_id, "file_type": f_type}
     save_data(WELCOME_FILE, settings); dp.message_handlers.unregister(save_welcome_step)
     await message.reply("✅ Saqlandi.")
-
-# --- GURUHDAGI HABARLARNI TEKSHIRISH (MAJBURIY OBUNA) ---
-@dp.message_handler(lambda m: m.chat.type in ['group', 'supergroup'])
-async def check_group_sub(message: types.Message):
-    # MUHIM: Welcome (yangi a'zo) xabarlarini o'chirib tashlamaslik uchun tekshiramiz
-    if message.content_type != types.ContentType.TEXT: return 
-
-    member = await message.chat.get_member(message.from_user.id)
-    if member.is_chat_admin() or message.from_user.is_bot: return
-    
-    channels_data = load_data(FORCED_CHANNELS_FILE)
-    target_channel = channels_data.get(str(message.chat.id))
-    if target_channel:
-        try:
-            check = await bot.get_chat_member(target_channel, message.from_user.id)
-            if check.status not in ACTIVE_STATUSES:
-                await message.delete()
-                user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
-                btn = InlineKeyboardMarkup().add(InlineKeyboardButton("📢 Kanalga obuna bo'lish", url=f"https://t.me/{target_channel[1:]}"))
-                await message.answer(f"⚠️ {user_link}, xabar yuborish uchun kanalga a'zo bo'ling!", reply_markup=btn, parse_mode="HTML")
-        except Exception as e:
-            logging.error(f"Error checking sub: {e}")
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
