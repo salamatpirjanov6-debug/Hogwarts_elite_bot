@@ -147,7 +147,6 @@ async def check_sub(user_id):
     except: return False, False
 
 # --- MODERATORLIK BUYRUQLARI ---
-
 @dp.message_handler(commands=["mute"])
 async def mute_user(message: types.Message):
     if message.chat.type == 'private': return
@@ -156,7 +155,7 @@ async def mute_user(message: types.Message):
     if not message.reply_to_message: return await message.reply("⚠️ Mute uchun xabarga 'reply' qiling!")
 
     args = message.get_args().split()
-    mute_time = 1  # 1 daqiqa
+    mute_time = 1
     reason = "Sabab ko'rsatilmadi"
     if args and args[0].isdigit():
         mute_time = int(args[0])
@@ -194,7 +193,7 @@ async def ban_user(message: types.Message):
         await message.answer(f"🚫 <b>{message.reply_to_message.from_user.first_name}</b> haydaldi.")
     except: await message.reply("Xatolik!")
 
-# --- START BUYRUG'I ---
+# --- START BUYRUG'I (TO'G'RILANGAN ISM BILAN) ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     if message.chat.type != 'private':
@@ -203,6 +202,8 @@ async def start_cmd(message: types.Message):
     
     register_user(message.from_user.id)
     in_ch, in_gr = await check_sub(message.from_user.id)
+    
+    # Ism bilan kutib olish mantiqi
     if not in_ch or not in_gr:
         btn = InlineKeyboardMarkup(row_width=1)
         if not in_ch: btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
@@ -210,7 +211,8 @@ async def start_cmd(message: types.Message):
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         await message.answer(f"Salom {message.from_user.first_name}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
         return
-    await message.answer(f"Xush kelibsiz {message.from_user.first_name}! Bo'limni tanlang:", reply_markup=main_menu())
+    
+    await message.answer(f"Xush kelibsiz {message.from_user.first_name}! ✨\nHogvarts olamiga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu())
 
 # --- ASOSIY HANDLERLAR ---
 @dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
@@ -229,7 +231,7 @@ async def private_menus(message: types.Message):
         house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
         text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {house_emojis[fname]} **{fname}** {house_emojis[fname]}\n\n"
                 f"🔑 Kalit so'zi: `{key_word}`\n\nKalit so'zni shlyapaga yuboring 👇")
-        btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
+        btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapa bot", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
 @dp.callback_query_handler(lambda c: True)
@@ -243,7 +245,7 @@ async def callback_handler(callback: types.CallbackQuery):
     elif callback.data == "back_to_main":
         await callback.message.delete(); await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
     
-    # Kitoblar va Kinolar callback mantiqi (TO'LIQ)
+    # Kitoblar va Kinolar callback mantiqi
     elif callback.data == "lang_book_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_UZ): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_uz_{i}"))
