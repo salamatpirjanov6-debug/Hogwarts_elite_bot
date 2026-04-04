@@ -227,7 +227,6 @@ async def start_cmd(message: types.Message):
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         await message.answer(f"Salom {message.from_user.first_name}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
         return
-    # Ismga profil linki qo'shildi va matn yangilandi
     user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
     await message.answer(f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
 
@@ -259,20 +258,27 @@ async def welcome_new_member(message: types.Message):
     if chat_id in settings:
         welcome = settings[chat_id]
         text = welcome['text']
-        # {name} o'rniga yangi foydalanuvchi linkini qo'yish
         user_link = f"<a href='tg://user?id={message.new_chat_members[0].id}'>{message.new_chat_members[0].first_name}</a>"
         caption = text.replace("{name}", user_link)
         f_id = welcome['file_id']
         f_type = welcome['file_type']
+        
+        # --- WELCOME TUGMALARI ---
+        btn = InlineKeyboardMarkup(row_width=1)
+        btn.add(
+            InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=shlyapa"),
+            InlineKeyboardButton("📢 Kanalimiz", url=f"https://t.me/{CHANNEL[1:]}")
+        )
+        
         try:
             if f_type == "photo":
-                await bot.send_photo(message.chat.id, f_id, caption=caption, parse_mode="HTML")
+                await bot.send_photo(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
             elif f_type == "video":
-                await bot.send_video(message.chat.id, f_id, caption=caption, parse_mode="HTML")
+                await bot.send_video(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
             elif f_type == "animation":
-                await bot.send_animation(message.chat.id, f_id, caption=caption, parse_mode="HTML")
+                await bot.send_animation(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
             else:
-                await bot.send_message(message.chat.id, caption, parse_mode="HTML")
+                await bot.send_message(message.chat.id, caption, reply_markup=btn, parse_mode="HTML")
         except Exception as e:
             logging.error(f"Welcome error: {e}")
 
@@ -283,7 +289,6 @@ async def callback_handler(callback: types.CallbackQuery):
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
             await callback.message.delete()
-            # Ismga link bu yerga ham qo'shildi
             user_link = f"<a href='tg://user?id={callback.from_user.id}'>{callback.from_user.first_name}</a>"
             await bot.send_message(uid, f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
         else: await callback.answer("Obuna bo'ling!", show_alert=True)
@@ -371,8 +376,10 @@ async def check_group_sub(message: types.Message):
             check = await bot.get_chat_member(target_channel, message.from_user.id)
             if check.status not in ACTIVE_STATUSES:
                 await message.delete()
+                # Foydalanuvchi ismiga link qo'shildi
+                user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
                 btn = InlineKeyboardMarkup().add(InlineKeyboardButton("📢 Kanalga obuna bo'lish", url=f"https://t.me/{target_channel[1:]}"))
-                await message.answer(f"⚠️ {message.from_user.first_name}, xabar yuborish uchun kanalga a'zo bo'ling!", reply_markup=btn)
+                await message.answer(f"⚠️ {user_link}, xabar yuborish uchun kanalga a'zo bo'ling!", reply_markup=btn, parse_mode="HTML")
         except Exception as e:
             logging.error(f"Error checking sub: {e}")
 
