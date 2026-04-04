@@ -182,12 +182,10 @@ async def hat_group(message: types.Message):
 # --- 3. KUTIB OLISH (YANGILANGAN: MEDIA VA LINK) ---
 @dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
 async def set_welcome(message: types.Message):
-    # Bu qism endi media yuborishni ham qo'llab-quvvatlaydi
     await message.reply("Kutib olish xabari uchun matn, rasm yoki video yuboring. {name} so'zini ishlatsangiz link bo'ladi.")
     dp.register_message_handler(save_welcome_step, user_id=ADMIN_ID, state=None, content_types=types.ContentTypes.ANY)
 
 async def save_welcome_step(message: types.Message):
-    # Admin matn yoki media yuborganda saqlaydi
     text = message.caption if message.caption else message.text
     if not text:
         return await message.reply("Xatolik: Xabar matnini yozishingiz shart!")
@@ -209,7 +207,6 @@ async def save_welcome_step(message: types.Message):
     settings[str(message.chat.id)] = {"text": text, "file_id": file_id, "file_type": file_type}
     save_data(WELCOME_FILE, settings)
     
-    # Handlerlarni tozalash (faqat bir marta saqlash uchun)
     dp.message_handlers.unregister(save_welcome_step)
     await message.reply("✅ Kutib olish xabari va media saqlandi.")
 
@@ -221,7 +218,7 @@ async def welcome_handler(message: types.Message):
     if not data:
         welcome_text = "Xush kelibsiz {name}!"
         file_type = "text"
-    elif isinstance(data, str): # Eski format bo'lsa
+    elif isinstance(data, str): 
         welcome_text = data
         file_type = "text"
     else:
@@ -232,7 +229,6 @@ async def welcome_handler(message: types.Message):
     btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start"))
     
     for user in message.new_chat_members:
-        # ISMNI LINK QILISH (HTML)
         user_link = f'<a href="tg://user?id={user.id}">{user.first_name}</a>'
         text = welcome_text.replace("{name}", user_link)
         
@@ -286,8 +282,17 @@ async def private_menus(message: types.Message):
         fname = data[uid]
         key_word = houses_dict[fname]
         house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
-        text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {house_emojis[fname]} **{fname}** {house_emojis[fname]}\n\n🔑 Kalit so'zi: `{key_word}`")
-        btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapa bot", url=f"https://t.me/{SHLYAPA_USER}"))
+        
+        # OQ STRELKA: Matn o'zgartirildi va nusxa olish uchun Markdown qo'shildi
+        text = (f"{intro_text}\n\n"
+                f"✨ Hamma narsa ayon! ✨\n\n"
+                f"Sizning fakultetingiz: {house_emojis[fname]} **{fname}** {house_emojis[fname]}\n\n"
+                f"🔑 Kalit so'zi: `{key_word}`\n\n"
+                f"(Nusxa olish uchun ustiga bosing)\n"
+                f"Kalit so'zni shlyapaga yuboring 👇")
+        
+        # QIZIL STRELKA: Tugma matni o'zgartirildi
+        btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
 @dp.callback_query_handler(lambda c: True)
