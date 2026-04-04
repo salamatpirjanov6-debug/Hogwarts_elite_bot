@@ -12,7 +12,6 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
 )
-from aiogram.utils import exceptions
 
 # --- SOZLAMALAR ---
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85Lh_XFsc-2n0L8O956T8Xw68Y9NqE")
@@ -45,7 +44,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- KITOOBLAR VA KINOLAR BAZASI ---
+# --- 1. KITOOBLAR BAZASI (TO'LIQ) ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
@@ -68,6 +67,7 @@ BOOKS_EN = [
 
 BOOKS_ALL = [{"name": "📚 All Books (1-7)", "file_id": "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ"}]
 
+# --- 2. KINOLAR BAZASI (TO'LIQ) ---
 MOVIES_UZ = [
     {"name": "🎬 1. Hikmatlar toshi", "file_id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA"},
     {"name": "🎬 2. Maxfiy hujra", "file_id": "BAACAgIAAxkBAAOFacu0BPXsr3WF3yYGmJHdjVeDjSMAAmSFAALhnOhKpL77RQyPlaE6BA"},
@@ -147,55 +147,74 @@ async def check_sub(user_id):
     except: return False, False
 
 # --- MODERATORLIK BUYRUQLARI ---
+
 @dp.message_handler(commands=["mute"])
 async def mute_user(message: types.Message):
     if message.chat.type == 'private': return
     member = await message.chat.get_member(message.from_user.id)
     if not member.is_chat_admin():
-        return await message.reply("❌ Bu buyruq faqat adminlar uchun!")
+        return await message.reply("❌ Faqat adminlar jazolay oladi!")
+
+    args = message.get_args().split(maxsplit=1)
+    mute_time = 1  # STANDART 1 DAQIQA
+    reason = "Sabab ko'rsatilmadi"
+    
     if not message.reply_to_message:
         return await message.reply("⚠️ Mute qilish uchun xabarga 'reply' qiling!")
 
-    args = message.get_args().split(maxsplit=1)
-    mute_time = 60
-    reason = "Sabab ko'rsatilmadi"
     if len(args) >= 1:
         if args[0].isdigit():
             mute_time = int(args[0])
             if len(args) > 1: reason = args[1]
-        else: reason = " ".join(args)
+        else:
+            reason = " ".join(args)
 
-    user_id = message.reply_to_message.from_user.id
-    user_name = message.reply_to_message.from_user.first_name
+    target_id = message.reply_to_message.from_user.id
+    target_name = message.reply_to_message.from_user.first_name
     until_date = int(asyncio.get_event_loop().time()) + (mute_time * 60)
     
     try:
-        await message.chat.restrict(user_id, permissions=types.ChatPermissions(can_send_messages=False), until_date=until_date)
-        await message.answer(f"🙊 <b>{user_name}</b> {mute_time} daqiqaga mute qilindi.\n📄 <b>Sabab:</b> {reason}", parse_mode="HTML")
+        await message.chat.restrict(target_id, permissions=types.ChatPermissions(can_send_messages=False), until_date=until_date)
+        await message.answer(f"🙊 <b>{target_name}</b> {mute_time} daqiqaga mute qilindi.\n📄 <b>Sabab:</b> {reason}", parse_mode="HTML")
+    except Exception as e: await message.reply(f"Xatolik: {e}")
+
+@dp.message_handler(commands=["unmute"])
+async def unmute_user(message: types.Message):
+    if message.chat.type == 'private': return
+    member = await message.chat.get_member(message.from_user.id)
+    if not member.is_chat_admin(): return
+    
+    if not message.reply_to_message:
+        return await message.reply("⚠️ Mutedan olish uchun xabarga 'reply' qiling!")
+
+    target_id = message.reply_to_message.from_user.id
+    try:
+        await message.chat.restrict(target_id, permissions=types.ChatPermissions(
+            can_send_messages=True, can_send_media_messages=True, 
+            can_send_other_messages=True, can_add_web_page_previews=True))
+        await message.answer(f"🔊 {message.reply_to_message.from_user.first_name} mutedan olindi.")
     except Exception as e: await message.reply(f"Xatolik: {e}")
 
 @dp.message_handler(commands=["ban"])
 async def ban_user(message: types.Message):
     if message.chat.type == 'private': return
     member = await message.chat.get_member(message.from_user.id)
-    if not member.is_chat_admin():
-        return await message.reply("❌ Faqat adminlar ban bera oladi!")
-    if not message.reply_to_message:
-        return await message.reply("⚠️ Ban qilish uchun xabarga 'reply' qiling!")
+    if not member.is_chat_admin(): return
+    if not message.reply_to_message: return await message.reply("⚠️ Reply qiling!")
 
     reason = message.get_args() or "Sabab ko'rsatilmadi"
-    user_id = message.reply_to_message.from_user.id
-    user_name = message.reply_to_message.from_user.first_name
-
     try:
-        await message.chat.kick(user_id)
-        await message.answer(f"🚫 <b>{user_name}</b> guruhdan haydaldi.\n📄 <b>Sabab:</b> {reason}", parse_mode="HTML")
+        await message.chat.kick(message.reply_to_message.from_user.id)
+        await message.answer(f"🚫 <b>{message.reply_to_message.from_user.first_name}</b> haydaldi.\n📄 <b>Sabab:</b> {reason}", parse_mode="HTML")
     except Exception as e: await message.reply(f"Xatolik: {e}")
 
-# --- START VA ASOSIY MANTIQ ---
+# --- START BUYRUG'I ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
-    if message.chat.type != 'private': return
+    if message.chat.type != 'private':
+        btn = InlineKeyboardMarkup().add(InlineKeyboardButton("💬 Shaxsiy chat", url=f"https://t.me/{BOT_USERNAME}"))
+        return await message.reply(f"Salom {message.from_user.first_name}! Bot bilan shaxsiy chatda gaplashing.", reply_markup=btn)
+    
     register_user(message.from_user.id)
     in_ch, in_gr = await check_sub(message.from_user.id)
     if not in_ch or not in_gr:
@@ -205,8 +224,9 @@ async def start_cmd(message: types.Message):
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         await message.answer("❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
         return
-    await message.answer(f"Xush kelibsiz {message.from_user.first_name}! Bo'limni tanlang:", reply_markup=main_menu())
+    await message.answer(f"Xush kelibsiz! Bo'limni tanlang:", reply_markup=main_menu())
 
+# --- ASOSIY HANDLERLAR ---
 @dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
 async def private_menus(message: types.Message):
     if message.chat.type != 'private': return
@@ -218,12 +238,11 @@ async def private_menus(message: types.Message):
         uid = str(message.from_user.id)
         data = load_data(HOUSES_FILE); intro_text = random.choice(SORTING_MESSAGES)
         if uid not in data:
-            fname = random.choice(list(houses_dict.keys()))
-            data[uid] = fname; save_data(HOUSES_FILE, data)
+            fname = random.choice(list(houses_dict.keys())); data[uid] = fname; save_data(HOUSES_FILE, data)
         fname = data[uid]; key_word = houses_dict[fname]
         house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
         text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {house_emojis[fname]} **{fname}** {house_emojis[fname]}\n\n"
-                f"🔑 Kalit so'zi: `{key_word}`\n\n(Nusxa olish uchun ustiga bosing)\nKalit so'zni shlyapaga yuboring 👇")
+                f"🔑 Kalit so'zi: `{key_word}`\n\nKalit so'zni shlyapaga yuboring 👇")
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
@@ -233,12 +252,12 @@ async def callback_handler(callback: types.CallbackQuery):
     if callback.data == "check_sub_status":
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
-            await callback.message.delete()
-            await bot.send_message(uid, "Xush kelibsiz!", reply_markup=main_menu())
+            await callback.message.delete(); await bot.send_message(uid, "Xush kelibsiz!", reply_markup=main_menu())
         else: await callback.answer("Obuna bo'ling!", show_alert=True)
     elif callback.data == "back_to_main":
-        await callback.message.delete()
-        await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
+        await callback.message.delete(); await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
+    
+    # Kitoblar callbacklari
     elif callback.data == "lang_book_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_UZ): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_uz_{i}"))
@@ -249,6 +268,10 @@ async def callback_handler(callback: types.CallbackQuery):
         for i, b in enumerate(BOOKS_EN): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_en_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("🇬🇧 Books:", reply_markup=btn)
+    elif callback.data == "lang_book_all":
+        await bot.send_document(uid, BOOKS_ALL[0]["file_id"])
+
+    # Kinolar callbacklari
     elif callback.data == "lang_movie_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_UZ): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_uz_{i}"))
@@ -259,6 +282,12 @@ async def callback_handler(callback: types.CallbackQuery):
         for i, m in enumerate(MOVIES_RU): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_ru_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("🇷🇺 Фильмы:", reply_markup=btn)
+    elif callback.data == "lang_movie_en":
+        btn = InlineKeyboardMarkup(row_width=1)
+        for i, m in enumerate(MOVIES_EN): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_en_{i}"))
+        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
+        await callback.message.edit_text("🇬🇧 Movies:", reply_markup=btn)
+
     elif callback.data.startswith("bk_"):
         parts = callback.data.split("_"); l, idx = parts[1], int(parts[2])
         if l == "uz": await bot.send_document(uid, BOOKS_UZ[idx]["file_id"])
@@ -267,9 +296,10 @@ async def callback_handler(callback: types.CallbackQuery):
         parts = callback.data.split("_"); l, idx = parts[1], int(parts[2])
         if l == "uz": await bot.send_video(uid, MOVIES_UZ[idx]["file_id"])
         elif l == "ru": await bot.send_video(uid, MOVIES_RU[idx]["file_id"])
+        elif l == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"])
     await callback.answer()
 
-# --- REKLAMA VA WELCOME QISMI ---
+# --- REKLAMA VA WELCOME ---
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
     text = message.get_args(); reply = message.reply_to_message
@@ -281,7 +311,7 @@ async def send_ads(message: types.Message):
             if reply: await reply.copy_to(int(uid))
             else: await bot.send_message(int(uid), text)
             count += 1
-            if count % 15 == 0: await asyncio.sleep(1)
+            if count % 20 == 0: await asyncio.sleep(1)
         except: continue
     await status_msg.edit_text(f"✅ Yetkazildi: {count}")
 
