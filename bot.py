@@ -11,6 +11,9 @@ from aiogram.types import (
     KeyboardButton, 
     ReplyKeyboardMarkup,
 )
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 # --- SOZLAMALAR ---
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85L_XFsc-2n0L8O956T8Xw68Y9NqE")
@@ -21,14 +24,19 @@ SHLYAPA_USER = "elite_shlyapa"
 BOT_USERNAME = "Hogwarts_elite_bot"
 
 logging.basicConfig(level=logging.INFO)
+# FSM storage qo'shildi (getid funksiyasi adashib ketmasligi uchun)
+storage = MemoryStorage()
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher(bot, storage=storage)
+
+# --- STATES ---
+class AdminStates(StatesGroup):
+    waiting_for_file = State()
 
 # --- BAZA FAYLLARI ---
 HOUSES_FILE = "user_houses.json"
 USERS_FILE = "bot_users.json"
 WELCOME_FILE = "welcome_settings.json"
-FORCED_CHANNELS_FILE = "forced_channels.json"
 
 def load_data(file):
     if os.path.exists(file):
@@ -46,7 +54,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- MA'LUMOTLAR BAZASI (ORIGINAL IZOHLAR BILAN) ---
+# --- MA'LUMOTLAR BAZASI ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE", "caption": "📖 Nomi: Garri Potter va Falsafiy tosh\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE", "caption": "📖 Nomi: Garri Potter va Maxfiy hujra\n\nKanal: @harry_potter_fans_uz"},
@@ -147,6 +155,29 @@ def movie_lang_menu():
         InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main")
     )
     return btn
+
+# --- ADMIN PANEL FUNKSIYALARI (FILE ID OLISH) ---
+@dp.message_handler(commands=["getid"], user_id=ADMIN_ID)
+async def admin_getid_start(message: types.Message):
+    await message.reply("Menga fayl yuboring (rasm, video, PDF, audio...), men sizga uning <b>File ID</b>sini beraman:", parse_mode="HTML")
+    await AdminStates.waiting_for_file.set()
+
+@dp.message_handler(state=AdminStates.waiting_for_file, content_types=types.ContentTypes.ANY)
+async def process_admin_file(message: types.Message, state: FSMContext):
+    file_id = None
+    if message.photo: file_id = message.photo[-1].file_id
+    elif message.video: file_id = message.video.file_id
+    elif message.document: file_id = message.document.file_id
+    elif message.audio: file_id = message.audio.file_id
+    elif message.voice: file_id = message.voice.file_id
+    elif message.animation: file_id = message.animation.file_id
+
+    if file_id:
+        await message.reply(f"Ushbu faylning ID'si:\n\n<code>{file_id}</code>", parse_mode="HTML")
+    else:
+        await message.reply("Fayl aniqlanmadi. Iltimos, rasm, video yoki hujjat yuboring.")
+    
+    await state.finish()
 
 # --- MODERATORLIK BUYRUQLARI ---
 @dp.message_handler(commands=["mute"])
