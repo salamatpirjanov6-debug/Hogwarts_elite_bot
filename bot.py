@@ -361,16 +361,20 @@ async def send_ads(message: types.Message):
         except: continue
     await status_msg.edit_text(f"✅ Yetkazildi: {count}")
 
+# MUOMMO BO'LGAN QISMNI TO'LIQ TUZATILGAN HOLATI:
 @dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
 async def set_welcome(message: types.Message):
-    await message.reply("Kutib olish xabari (rasm, video yoki matn) yuboring. {name} so'zi foydalanuvchi linki bo'ladi.")
+    await message.reply("Kutib olish xabari (rasm, video yoki matn) yuboring.\n\n⚠️ Eslatma: Keyingi yuboradigan xabaringiz ushbu chat uchun welcome xabari sifatida saqlanadi.")
+    # register_message_handler orqali keyingi xabarni kutamiz
     dp.register_message_handler(save_welcome_step, user_id=ADMIN_ID, content_types=types.ContentTypes.ANY)
 
 async def save_welcome_step(message: types.Message):
-    if message.text == "/setwelcome": return
-    
+    # Buyruqni o'zini saqlab qo'ymasligi uchun
+    if message.text and message.text.startswith("/"):
+        return
+
     text = message.caption if message.caption else message.text
-    if not text: text = "Xush kelibsiz!" # Agar umuman matn yozilmasa
+    if not text: text = "Xush kelibsiz, {name}!" 
     
     f_id = "None"; f_type = "text"
     if message.photo:
@@ -381,11 +385,13 @@ async def save_welcome_step(message: types.Message):
         f_id = message.animation.file_id; f_type = "animation"
         
     settings = load_data(WELCOME_FILE)
+    # Aynan qaysi chatda yozilgan bo'lsa, o'sha chat uchun saqlaydi
     settings[str(message.chat.id)] = {"text": text, "file_id": f_id, "file_type": f_type}
     save_data(WELCOME_FILE, settings)
     
+    # MUHIM: Handlerni o'chiramiz, aks holda bot har bir yozganingizni welcome qilaveradi
     dp.message_handlers.unregister(save_welcome_step)
-    await message.reply("✅ Yangi kutib olish xabari saqlandi.")
+    await message.reply(f"✅ Ushbu chat uchun yangi {f_type} kutib olish xabari saqlandi.")
 
 # --- GURUHDAGI HABARLARNI TEKSHIRISH ---
 @dp.message_handler(lambda m: m.chat.type in ['group', 'supergroup'])
