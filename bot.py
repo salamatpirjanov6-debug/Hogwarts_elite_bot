@@ -263,37 +263,6 @@ async def get_file_id_handler(message: types.Message):
     elif message.audio: file_id = message.audio.file_id
     if file_id: await message.reply(f"<code>{file_id}</code>", parse_mode="HTML")
 
-# --- YANGI A'ZONI KUTIB OLISH ---
-@dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
-async def welcome_new_member(message: types.Message):
-    settings = load_data(WELCOME_FILE)
-    chat_id = str(message.chat.id)
-    if chat_id in settings:
-        welcome = settings[chat_id]
-        text = welcome['text']
-        user_link = f"<a href='tg://user?id={message.new_chat_members[0].id}'>{message.new_chat_members[0].first_name}</a>"
-        caption = text.replace("{name}", user_link)
-        f_id = welcome['file_id']
-        f_type = welcome['file_type']
-        
-        btn = InlineKeyboardMarkup(row_width=1)
-        btn.add(
-            InlineKeyboardButton("📢 Kanalga qo'shilish", url=f"https://t.me/{CHANNEL[1:]}"),
-            InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start")
-        )
-        
-        try:
-            if f_type == "photo":
-                await bot.send_photo(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            elif f_type == "video":
-                await bot.send_video(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            elif f_type == "animation":
-                await bot.send_animation(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            else:
-                await bot.send_message(message.chat.id, caption, reply_markup=btn, parse_mode="HTML")
-        except Exception as e:
-            logging.error(f"Welcome error: {e}")
-
 # --- CALLBACK HANDLER ---
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
@@ -345,7 +314,7 @@ async def callback_handler(callback: types.CallbackQuery):
         elif l == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"], caption=MOVIES_EN[idx]["caption"])
     await callback.answer()
 
-# --- REKLAMA VA WELCOME ADMIN ---
+# --- REKLAMA ---
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
     text = message.get_args(); reply = message.reply_to_message
@@ -361,21 +330,34 @@ async def send_ads(message: types.Message):
         except: continue
     await status_msg.edit_text(f"✅ Yetkazildi: {count}")
 
-# TO'G'RILANGAN SETWELCOME QISMI:
-@dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
-async def set_welcome(message: types.Message):
-    await message.reply("Kutib olish xabari (rasm, video yoki matn) yuboring.\n\n⚠️ Eslatma: Keyingi yuboradigan xabaringiz ushbu chat uchun welcome xabari sifatida saqlanadi.")
-    # index=0 orqali ushbu handlerni ro'yxatda eng birinchi o'ringa qo'yamiz
-    dp.register_message_handler(save_welcome_step, user_id=ADMIN_ID, content_types=types.ContentTypes.ANY, index=0)
+# --- WELCOME SOZLASH (TUZATILGAN QISM) ---
+@dp.message_handler(commands=["setwelcome"])
+async def set_welcome_cmd(message: types.Message):
+    # Faqat adminlar ishlata oladi
+    if message.from_user.id != ADMIN_ID:
+        member = await message.chat.get_member(message.from_user.id)
+        if not member.is_chat_admin(): return
+
+    await message.reply("📥 **Kutib olish xabarini (rasm, video yoki matn) yuboring.**\n\n"
+                        "⚠️ Keyingi yuboradigan xabaringiz ushbu chat uchun welcome sifatida saqlanadi.", parse_mode="Markdown")
+    
+    # Keyingi xabarni ushlash uchun vaqtinchalik handler
+    dp.register_message_handler(save_welcome_step, 
+                                 user_id=message.from_user.id, 
+                                 chat_id=message.chat.id, 
+                                 content_types=types.ContentTypes.ANY)
 
 async def save_welcome_step(message: types.Message):
     if message.text and message.text.startswith("/"):
-        return
+        if message.text == "/cancel":
+            dp.message_handlers.unregister(save_welcome_step)
+            return await message.reply("❌ Bekor qilindi.")
+        return 
 
     text = message.caption if message.caption else message.text
     if not text: text = "Xush kelibsiz, {name}!" 
     
-    f_id = "None"; f_type = "text"
+    f_id = None; f_type = "text"
     if message.photo:
         f_id = message.photo[-1].file_id; f_type = "photo"
     elif message.video:
@@ -390,11 +372,44 @@ async def save_welcome_step(message: types.Message):
     dp.message_handlers.unregister(save_welcome_step)
     await message.reply(f"✅ Ushbu chat uchun yangi {f_type} kutib olish xabari saqlandi.")
 
+# --- YANGI A'ZONI KUTIB OLISH ---
+@dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
+async def welcome_new_member(message: types.Message):
+    settings = load_data(WELCOME_FILE)
+    chat_id = str(message.chat.id)
+    if chat_id in settings:
+        welcome = settings[chat_id]
+        text = welcome['text']
+        user_link = f"<a href='tg://user?id={message.new_chat_members[0].id}'>{message.new_chat_members[0].first_name}</a>"
+        caption = text.replace("{name}", user_link)
+        f_id = welcome.get('file_id')
+        f_type = welcome.get('file_type', 'text')
+        
+        btn = InlineKeyboardMarkup(row_width=1)
+        btn.add(
+            InlineKeyboardButton("📢 Kanalga qo'shilish", url=f"https://t.me/{CHANNEL[1:]}"),
+            InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start")
+        )
+        
+        try:
+            if f_type == "photo":
+                await bot.send_photo(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
+            elif f_type == "video":
+                await bot.send_video(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
+            elif f_type == "animation":
+                await bot.send_animation(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
+            else:
+                await bot.send_message(message.chat.id, caption, reply_markup=btn, parse_mode="HTML")
+        except Exception as e:
+            logging.error(f"Welcome error: {e}")
+
 # --- GURUHDAGI HABARLARNI TEKSHIRISH ---
 @dp.message_handler(lambda m: m.chat.type in ['group', 'supergroup'])
 async def check_group_sub(message: types.Message):
+    if message.from_user.is_bot: return
     member = await message.chat.get_member(message.from_user.id)
-    if member.is_chat_admin() or message.from_user.is_bot: return
+    if member.is_chat_admin(): return
+    
     channels_data = load_data(FORCED_CHANNELS_FILE)
     target_channel = channels_data.get(str(message.chat.id))
     if target_channel:
