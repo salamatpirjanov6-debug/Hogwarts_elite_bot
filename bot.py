@@ -1,4 +1,4 @@
-Import json
+import json
 import logging
 import os
 import random
@@ -45,7 +45,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- 1. KITOOBLAR BAZASI ---
+# --- KITOOBLAR VA KINOLAR BAZASI (O'zgartirilmagan) ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE", "caption": "📖 Nomi: Garri Potter va Falsafiy tosh\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE", "caption": "📖 Nomi: Garri Potter va Maxfiy hujra\n\nKanal: @harry_potter_fans_uz"},
@@ -68,7 +68,6 @@ BOOKS_EN = [
 
 BOOKS_ALL = [{"name": "📚 All Books (1-7)", "file_id": "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ", "caption": "📚 Harry Potter All Books (1-7)\n\nChannel: @harry_potter_fans_uz"}]
 
-# --- 2. KINOLAR BAZASI ---
 MOVIES_UZ = [
     {"name": "🎬 1. Hikmatlar toshi", "file_id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA", "caption": "1. 🎬 Nomi: HP 1: Hikmatlar toshi\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:32:22\n\nKanal: @harry_potter_fans_uz"},
     {"name": "🎬 2. Maxfiy hujra", "file_id": "BAACAgIAAxkBAAOFacu0BPXsr3WF3yYGmJHdjVeDjSMAAmSFAALhnOhKpL77RQyPlaE6BA", "caption": "2. 🎬 Nomi: HP 2: Maxfiy hujra\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:54:25\n\nKanal: @harry_potter_fans_uz"},
@@ -250,6 +249,22 @@ async def private_menus(message: types.Message):
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
+# --- FILE ID OLUVCHI (FAQAT ADMIN UCHUN) ---
+@dp.message_handler(content_types=['document', 'video', 'photo', 'audio'], user_id=ADMIN_ID)
+async def get_file_id_handler(message: types.Message):
+    file_id = ""
+    if message.document:
+        file_id = message.document.file_id
+    elif message.video:
+        file_id = message.video.file_id
+    elif message.photo:
+        file_id = message.photo[-1].file_id
+    elif message.audio:
+        file_id = message.audio.file_id
+    
+    if file_id:
+        await message.reply(f"<code>{file_id}</code>", parse_mode="HTML")
+
 # --- YANGI A'ZONI KUTIB OLISH (WELCOME HANDLER) ---
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def welcome_new_member(message: types.Message):
@@ -263,7 +278,6 @@ async def welcome_new_member(message: types.Message):
         f_id = welcome['file_id']
         f_type = welcome['file_type']
         
-        # --- WELCOME TUGMALARI ---
         btn = InlineKeyboardMarkup(row_width=1)
         btn.add(
             InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=shlyapa"),
@@ -376,7 +390,6 @@ async def check_group_sub(message: types.Message):
             check = await bot.get_chat_member(target_channel, message.from_user.id)
             if check.status not in ACTIVE_STATUSES:
                 await message.delete()
-                # Foydalanuvchi ismiga link qo'shildi
                 user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
                 btn = InlineKeyboardMarkup().add(InlineKeyboardButton("📢 Kanalga obuna bo'lish", url=f"https://t.me/{target_channel[1:]}"))
                 await message.answer(f"⚠️ {user_link}, xabar yuborish uchun kanalga a'zo bo'ling!", reply_markup=btn, parse_mode="HTML")
@@ -385,7 +398,3 @@ async def check_group_sub(message: types.Message):
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
-
-
-
-Mana 
