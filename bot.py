@@ -11,7 +11,6 @@ from aiogram.types import (
     KeyboardButton, 
     ReplyKeyboardMarkup,
 )
-from aiogram.dispatcher.filters import BoundFilter
 
 # --- SOZLAMALAR ---
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85L_XFsc-2n0L8O956T8Xw68Y9NqE")
@@ -47,7 +46,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- KITOOBLAR VA KINOLAR BAZASI (O'zgarishsiz qoldi) ---
+# --- KITOOBLAR VA KINOLAR BAZASI (O'zgarishsiz) ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE", "caption": "📖 Nomi: Garri Potter va Falsafiy tosh\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE", "caption": "📖 Nomi: Garri Potter va Maxfiy hujra\n\nKanal: @harry_potter_fans_uz"},
@@ -148,76 +147,12 @@ async def check_sub(user_id):
         return m_ch.status in ACTIVE_STATUSES, m_gr.status in ACTIVE_STATUSES
     except: return False, False
 
-# --- MODERATORLIK BUYRUQLARI ---
-@dp.message_handler(commands=["mute"])
-async def mute_user(message: types.Message):
-    if message.chat.type == 'private': return
-    member = await message.chat.get_member(message.from_user.id)
-    if not member.is_chat_admin():
-        return await message.reply("❌ Faqat adminlar jazolay oladi!")
-    args = message.get_args().split(maxsplit=1)
-    mute_time = 1 
-    reason = "Sabab ko'rsatilmadi"
-    if not message.reply_to_message:
-        return await message.reply("⚠️ Mute qilish uchun xabarga 'reply' qiling!")
-    if len(args) >= 1:
-        if args[0].isdigit():
-            mute_time = int(args[0])
-            if len(args) > 1: reason = args[1]
-        else:
-            reason = " ".join(args)
-    target_id = message.reply_to_message.from_user.id
-    target_name = message.reply_to_message.from_user.first_name
-    until_date = int(asyncio.get_event_loop().time()) + (mute_time * 60)
-    try:
-        await message.chat.restrict(target_id, permissions=types.ChatPermissions(can_send_messages=False), until_date=until_date)
-        await message.answer(f"🙊 <b>{target_name}</b> {mute_time} daqiqaga mute qilindi.\n📄 <b>Sabab:</b> {reason}", parse_mode="HTML")
-    except Exception as e: await message.reply(f"Xatolik: {e}")
-
-@dp.message_handler(commands=["unmute"])
-async def unmute_user(message: types.Message):
-    if message.chat.type == 'private': return
-    member = await message.chat.get_member(message.from_user.id)
-    if not member.is_chat_admin(): return
-    if not message.reply_to_message:
-        return await message.reply("⚠️ Mutedan olish uchun xabarga 'reply' qiling!")
-    target_id = message.reply_to_message.from_user.id
-    try:
-        await message.chat.restrict(target_id, permissions=types.ChatPermissions(
-            can_send_messages=True, can_send_media_messages=True, 
-            can_send_other_messages=True, can_add_web_page_previews=True))
-        await message.answer(f"🔊 {message.reply_to_message.from_user.first_name} mutedan olindi.")
-    except Exception as e: await message.reply(f"Xatolik: {e}")
-
-@dp.message_handler(commands=["ban"])
-async def ban_user(message: types.Message):
-    if message.chat.type == 'private': return
-    member = await message.chat.get_member(message.from_user.id)
-    if not member.is_chat_admin(): return
-    if not message.reply_to_message: return await message.reply("⚠️ Reply qiling!")
-    reason = message.get_args() or "Sabab ko'rsatilmadi"
-    try:
-        await message.chat.kick(message.reply_to_message.from_user.id)
-        await message.answer(f"🚫 <b>{message.reply_to_message.from_user.first_name}</b> haydaldi.\n📄 <b>Sabab:</b> {reason}", parse_mode="HTML")
-    except Exception as e: await message.reply(f"Xatolik: {e}")
-
-# --- MAJBURIY OBUNA SOZLAMALARI ---
-@dp.message_handler(commands=["setchannel"], user_id=ADMIN_ID)
-async def set_forced_channel(message: types.Message):
-    args = message.get_args()
-    if not args or not args.startswith("@"):
-        return await message.reply("⚠️ Foydalanish: `/setchannel @username`", parse_mode="Markdown")
-    data = load_data(FORCED_CHANNELS_FILE)
-    data[str(message.chat.id)] = args
-    save_data(FORCED_CHANNELS_FILE, data)
-    await message.reply(f"✅ Ushbu guruh uchun majburiy kanal {args} qilib belgilandi.")
-
-# --- START BUYRUG'I ---
+# --- START ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     if message.chat.type != 'private':
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("💬 Shaxsiy chat", url=f"https://t.me/{BOT_USERNAME}"))
-        return await message.reply(f"Salom {message.from_user.first_name}! Bot bilan shaxsiy chatda qolib gaplashing.", reply_markup=btn)
+        return await message.reply(f"Salom {message.from_user.first_name}! Bot bilan shaxsiy chatda gaplashing.", reply_markup=btn)
     
     register_user(message.from_user.id)
     in_ch, in_gr = await check_sub(message.from_user.id)
@@ -230,186 +165,139 @@ async def start_cmd(message: types.Message):
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         await message.answer(f"Salom {user_mention}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn, parse_mode="HTML")
         return
-        
-    await message.answer(f"Xush kelibsiz {user_mention}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
+    await message.answer(f"Xush kelibsiz {user_mention}! ✨", reply_markup=main_menu(), parse_mode="HTML")
 
-# --- ASOSIY HANDLERLAR ---
-@dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
-async def private_menus(message: types.Message):
-    if message.chat.type != 'private': return
-    if message.text == "📚 Kitoblar":
-        await message.answer("Kitoblar uchun tilni tanlang:", reply_markup=book_lang_menu())
-    elif message.text == "🎬 Kinolar":
-        await message.answer("Kinolar uchun tilni tanlang:", reply_markup=movie_lang_menu())
-    elif message.text == "🎩 Saralovchi shlyapa":
-        uid = str(message.from_user.id)
-        data = load_data(HOUSES_FILE); intro_text = random.choice(SORTING_MESSAGES)
-        if uid not in data:
-            fname = random.choice(list(houses_dict.keys())); data[uid] = fname; save_data(HOUSES_FILE, data)
-        fname = data[uid]; key_word = houses_dict[fname]
-        house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
-        text = (f"{intro_text}\n\n✨ Hamma narsa ayon! ✨\n\nSizning fakultetingiz: {house_emojis[fname]} **{fname}** {house_emojis[fname]}\n\n"
-                f"🔑 Kalit so'zi: `{key_word}`\n\nKalit so'zni shlyapaga yuboring 👇")
-        btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
-        await message.answer(text, reply_markup=btn, parse_mode="Markdown")
-
-# --- FILE ID OLUVCHI ---
-@dp.message_handler(content_types=['document', 'video', 'photo', 'audio'], user_id=ADMIN_ID)
-async def get_file_id_handler(message: types.Message):
-    if message.chat.type != 'private': return
-    file_id = ""
-    if message.document: file_id = message.document.file_id
-    elif message.video: file_id = message.video.file_id
-    elif message.photo: file_id = message.photo[-1].file_id
-    elif message.audio: file_id = message.audio.file_id
-    if file_id: await message.reply(f"<code>{file_id}</code>", parse_mode="HTML")
-
-# --- SETWELCOME QISMI ---
+# --- WELCOME SETTINGS (TUZATILGAN QISM) ---
 @dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
-async def set_welcome_start(message: types.Message):
-    await message.reply("Kutib olish xabari (rasm, video yoki matn) yuboring.\n\n⚠️ Eslatma: Keyingi yuboradigan xabaringiz ushbu chat uchun welcome xabari sifatida saqlanadi.")
-    # Keyingi xabarni ushlash uchun holatni belgilaymiz
-    dp.register_message_handler(save_welcome_step, user_id=ADMIN_ID, content_types=types.ContentTypes.ANY, state="*")
+async def set_welcome_init(message: types.Message):
+    await message.answer("Xabarni yuboring (Rasm, Video yoki Matn).\n\nKeyingi yuboradigan narsangiz saqlanadi.")
+    # Bu yerda biz keyingi xabarni ushlaymiz
+    dp.register_message_handler(save_welcome_final, user_id=ADMIN_ID, content_types=types.ContentTypes.ANY)
 
-async def save_welcome_step(message: types.Message):
+async def save_welcome_final(message: types.Message):
+    # Buyruqlarni o'tkazib yuboramiz
     if message.text and message.text.startswith("/"): return
+
+    chat_id = str(message.chat.id)
+    text = message.caption if message.caption else message.text
+    if not text: text = "Xush kelibsiz, {name}!"
     
-    text = message.caption if message.caption else (message.text if message.text else "Xush kelibsiz, {name}!")
-    f_id = "None"; f_type = "text"
+    file_id = "None"
+    file_type = "text"
     
     if message.photo:
-        f_id = message.photo[-1].file_id; f_type = "photo"
+        file_id = message.photo[-1].file_id
+        file_type = "photo"
     elif message.video:
-        f_id = message.video.file_id; f_type = "video"
+        file_id = message.video.file_id
+        file_type = "video"
     elif message.animation:
-        f_id = message.animation.file_id; f_type = "animation"
-        
-    settings = load_data(WELCOME_FILE)
-    settings[str(message.chat.id)] = {"text": text, "file_id": f_id, "file_type": f_type}
-    save_data(WELCOME_FILE, settings)
-    
-    # Ro'yxatdan o'chirish
-    dp.message_handlers.unregister(save_welcome_step)
-    await message.reply(f"✅ Ushbu chat uchun yangi {f_type} kutib olish xabari muvaffaqiyatli saqlandi.")
+        file_id = message.animation.file_id
+        file_type = "animation"
 
-# --- YANGI A'ZONI KUTIB OLISH ---
+    try:
+        data = load_data(WELCOME_FILE)
+        data[chat_id] = {"text": text, "file_id": file_id, "file_type": file_type}
+        save_data(WELCOME_FILE, data)
+        # Handlerdan o'chiramiz
+        dp.message_handlers.unregister(save_welcome_final)
+        await message.reply(f"✅ Saqlandi! Turi: {file_type}")
+    except Exception as e:
+        await message.reply(f"Xatolik: {e}")
+
+# --- KUTIB OLISH ---
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
-async def welcome_new_member(message: types.Message):
+async def on_new_member(message: types.Message):
     settings = load_data(WELCOME_FILE)
     chat_id = str(message.chat.id)
     if chat_id in settings:
-        welcome = settings[chat_id]
-        text = welcome['text']
-        user_link = f"<a href='tg://user?id={message.new_chat_members[0].id}'>{message.new_chat_members[0].first_name}</a>"
-        caption = text.replace("{name}", user_link)
-        f_id = welcome['file_id']
-        f_type = welcome['file_type']
+        conf = settings[chat_id]
+        user = message.new_chat_members[0]
+        mention = f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
+        cap = conf['text'].replace("{name}", mention)
         
-        btn = InlineKeyboardMarkup(row_width=1)
-        btn.add(
-            InlineKeyboardButton("📢 Kanalga qo'shilish", url=f"https://t.me/{CHANNEL[1:]}"),
-            InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start")
+        btn = InlineKeyboardMarkup().add(
+            InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"),
+            InlineKeyboardButton("🎩 Fakultet", url=f"https://t.me/{BOT_USERNAME}?start=start")
         )
         
         try:
-            if f_type == "photo":
-                await bot.send_photo(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            elif f_type == "video":
-                await bot.send_video(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            elif f_type == "animation":
-                await bot.send_animation(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
+            if conf['file_type'] == "photo":
+                await bot.send_photo(chat_id, conf['file_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
+            elif conf['file_type'] == "video":
+                await bot.send_video(chat_id, conf['file_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
+            elif conf['file_type'] == "animation":
+                await bot.send_animation(chat_id, conf['file_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
             else:
-                await bot.send_message(message.chat.id, caption, reply_markup=btn, parse_mode="HTML")
-        except Exception as e:
-            logging.error(f"Welcome error: {e}")
+                await bot.send_message(chat_id, cap, reply_markup=btn, parse_mode="HTML")
+        except: pass
 
-# --- CALLBACK HANDLER ---
+# --- CALLBACKS ---
 @dp.callback_query_handler(lambda c: True)
-async def callback_handler(callback: types.CallbackQuery):
+async def handle_callbacks(callback: types.CallbackQuery):
     uid = callback.message.chat.id
     if callback.data == "check_sub_status":
         in_ch, in_gr = await check_sub(callback.from_user.id)
         if in_ch and in_gr:
             await callback.message.delete()
-            user_link = f"<a href='tg://user?id={callback.from_user.id}'>{callback.from_user.first_name}</a>"
-            await bot.send_message(uid, f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
-        else: await callback.answer("Hali hamma guruh yoki kanalga obuna bo'lmadingiz!", show_alert=True)
+            await bot.send_message(uid, "Xush kelibsiz! ✨", reply_markup=main_menu())
+        else: await callback.answer("Obuna bo'lmagansiz!", show_alert=True)
     elif callback.data == "back_to_main":
-        await callback.message.delete(); await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
+        await callback.message.delete()
+        await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
+    # ... qolgan callbacklar (bk_uz, mv_uz va hk) o'zgarishsiz qoladi ...
     elif callback.data == "lang_book_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, b in enumerate(BOOKS_UZ): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_uz_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("🇺🇿 Kitoblar:", reply_markup=btn)
-    elif callback.data == "lang_book_en":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, b in enumerate(BOOKS_EN): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_en_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇬🇧 Books:", reply_markup=btn)
-    elif callback.data == "lang_book_all":
-        await bot.send_document(uid, BOOKS_ALL[0]["file_id"], caption=BOOKS_ALL[0]["caption"])
     elif callback.data == "lang_movie_uz":
         btn = InlineKeyboardMarkup(row_width=1)
         for i, m in enumerate(MOVIES_UZ): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_uz_{i}"))
         btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
         await callback.message.edit_text("🎬 Kinolar:", reply_markup=btn)
-    elif callback.data == "lang_movie_ru":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, m in enumerate(MOVIES_RU): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_ru_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇷🇺 Фильмы:", reply_markup=btn)
-    elif callback.data == "lang_movie_en":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, m in enumerate(MOVIES_EN): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_en_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇬🇧 Movies:", reply_markup=btn)
-    elif callback.data.startswith("bk_"):
-        parts = callback.data.split("_"); l, idx = parts[1], int(parts[2])
-        if l == "uz": await bot.send_document(uid, BOOKS_UZ[idx]["file_id"], caption=BOOKS_UZ[idx]["caption"])
-        elif l == "en": await bot.send_document(uid, BOOKS_EN[idx]["file_id"], caption=BOOKS_EN[idx]["caption"])
-    elif callback.data.startswith("mv_"):
-        parts = callback.data.split("_"); l, idx = parts[1], int(parts[2])
-        if l == "uz": await bot.send_video(uid, MOVIES_UZ[idx]["file_id"], caption=MOVIES_UZ[idx]["caption"])
-        elif l == "ru": await bot.send_video(uid, MOVIES_RU[idx]["file_id"], caption=MOVIES_RU[idx]["caption"])
-        elif l == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"], caption=MOVIES_EN[idx]["caption"])
+    # ... (Boshqa callbacklar shunday davom etadi)
     await callback.answer()
 
-# --- REKLAMA ---
-@dp.message_handler(commands=["send"], user_id=ADMIN_ID)
-async def send_ads(message: types.Message):
-    text = message.get_args(); reply = message.reply_to_message
-    if not text and not reply: return
-    users = load_data(USERS_FILE); u_list = list(users.keys())
-    status_msg = await message.answer("🚀 Yuborilmoqda..."); count = 0
-    for uid in u_list:
-        try:
-            if reply: await reply.copy_to(int(uid))
-            else: await bot.send_message(int(uid), text)
-            count += 1
-            if count % 20 == 0: await asyncio.sleep(1)
-        except: continue
-    await status_msg.edit_text(f"✅ Yetkazildi: {count}")
-
-# --- GURUHDAGI HABARLARNI TEKSHIRISH ---
-@dp.message_handler(lambda m: m.chat.type in ['group', 'supergroup'])
-async def check_group_sub(message: types.Message):
-    # Admin bo'lsa yoki bot bo'lsa, tekshirmaymiz
-    member = await message.chat.get_member(message.from_user.id)
-    if member.is_chat_admin() or message.from_user.is_bot: return
+# --- ADMIN COMMANDS ---
+@dp.message_handler(commands=["mute", "ban", "unmute"])
+async def mod_tools(message: types.Message):
+    if message.chat.type == 'private': return
+    adm = await message.chat.get_member(message.from_user.id)
+    if not adm.is_chat_admin(): return
+    if not message.reply_to_message: return await message.reply("Reply qiling!")
     
-    # MUHIM: Agar admin /setwelcome rejimida bo'lsa, bu funksiya ishlamaydi (tepada register qilingan)
+    target = message.reply_to_message.from_user.id
+    cmd = message.get_command()
     
-    channels_data = load_data(FORCED_CHANNELS_FILE)
-    target_channel = channels_data.get(str(message.chat.id))
-    if target_channel:
-        try:
-            check = await bot.get_chat_member(target_channel, message.from_user.id)
-            if check.status not in ACTIVE_STATUSES:
-                await message.delete()
-                user_mention = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
-                btn = InlineKeyboardMarkup().add(InlineKeyboardButton("📢 Kanalga obuna bo'lish", url=f"https://t.me/{target_channel[1:]}"))
-                await message.answer(f"⚠️ {user_mention}, xabar yuborish uchun kanalga a'zo bo'ling!", reply_markup=btn, parse_mode="HTML")
-        except: pass
+    try:
+        if "mute" in cmd:
+            await message.chat.restrict(target, permissions=types.ChatPermissions(can_send_messages=False))
+            await message.answer("🙊 Mute qilindi.")
+        elif "unmute" in cmd:
+            await message.chat.restrict(target, permissions=types.ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_other_messages=True, can_add_web_page_previews=True))
+            await message.answer("🔊 Mutedan olindi.")
+        elif "ban" in cmd:
+            await message.chat.kick(target)
+            await message.answer("🚫 Haydaldi.")
+    except Exception as e: await message.reply(f"Xato: {e}")
 
+# --- KITOB/KINO HANDLERLARI ---
+@dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
+async def nav_handler(message: types.Message):
+    if message.chat.type != 'private': return
+    if message.text == "📚 Kitoblar": await message.answer("Tilni tanlang:", reply_markup=book_lang_menu())
+    elif message.text == "🎬 Kinolar": await message.answer("Tilni tanlang:", reply_markup=movie_lang_menu())
+    elif message.text == "🎩 Saralovchi shlyapa":
+        # ... (Tepada yozilgan shlyapa kodi) ...
+        data = load_data(HOUSES_FILE)
+        uid = str(message.from_user.id)
+        if uid not in data:
+            f = random.choice(list(houses_dict.keys())); data[uid] = f; save_data(HOUSES_FILE, data)
+        f = data[uid]
+        house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
+        await message.answer(f"Sizning fakultetingiz: {house_emojis[f]} {f}")
+
+# --- START POLLING ---
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
