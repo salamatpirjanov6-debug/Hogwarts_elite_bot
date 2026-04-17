@@ -25,17 +25,19 @@ SHLYAPA_USER = "elite_shlyapa"
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
-bot = Bot(token=API_TOKEN)
+bot = Bot(token=API_TOKEN, parse_mode="HTML") # Standart HTML rejimi
 dp = Dispatcher(bot, storage=storage)
 
 class AdminStates(StatesGroup):
     waiting_for_file = State()
     waiting_for_ad = State()
 
-# --- MA'LUMOTLAR BAZASI (HECH NARSA QISQARTIRILMADI) ---
+# --- MA'LUMOTLAR BAZASI ---
+
+# Alohida tugma uchun "Hammasi birda" fayli
+ALL_IN_ONE_BOOK = {"name": "📚 Hammasi birda (1-7)", "file_id": "BQACAgIAAxkBAAIDvWnOr_Z5zZ9Xj_vOL8p9R-Z8o8aLAAIqAAIx_1lLYm3f_zJ7z5M6BA", "caption": "📚 Garri Potter: Barcha qismlar (1-7) bitta faylda!\n\n📢 Kanal: @harry_potter_fans_uz"}
 
 BOOKS_UZ = [
-    {"name": "📚 Hammasi birda (1-7)", "file_id": "BQACAgIAAxkBAAIDvWnOr_Z5zZ9Xj_vOL8p9R-Z8o8aLAAIqAAIx_1lLYm3f_zJ7z5M6BA", "caption": "📚 Garri Potter: Barcha qismlar (1-7) bitta faylda!\n\n📢 Kanal: @harry_potter_fans_uz"},
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE", "caption": "📖 Nomi: Garri Potter va Falsafiy tosh\n\n📢 Kanal: @harry_potter_fans_uz"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE", "caption": "📖 Nomi: Garri Potter va Maxfiy hujra\n\n📢 Kanal: @harry_potter_fans_uz"},
     {"name": "📖 3. Azkaban maxbusi", "file_id": "BQACAgIAAxkBAANlacuwQSg_C6sntUxgp1s-EwTRw10AAgkHAAJfZdhIu3sjwnyKCrQ6BA", "caption": "📖 Nomi: Garri Potter va Azkaban mahbusi\n\n📢 Kanal: @harry_potter_fans_uz"},
@@ -69,25 +71,25 @@ MOVIES_UZ = [
 ]
 
 MOVIES_RU = [
-    {"name": "🎬 1. Философский камень", "file_id": "BAACAgIAAxkBAAIDSWnOlb1_AAGAYgWnEGm3bGJfXjFeggACKAoAAjH_WUs4J1skcGE7GToE", "caption": "🎬 ГП 1: Философский камень\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 2. Тайная комната", "file_id": "BAACAgIAAxkBAAIDS2nOld1zIwQEOIo_XNaB20dS4yBKAAImCgACMf9ZS8YV5UtV-2QLOgQ", "caption": "🎬 ГП 2: Тайная комната\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 3. Узник Азкабана", "file_id": "BAACAgIAAxkBAAIDTWnOlfGGh3F6yuTdkzg6YDll0LciAAInCgACMf9ZSxH4i6-D8wN7OgQ", "caption": "🎬 ГП 3: Узник Азкабана\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 4. Кубок огня", "file_id": "BAACAgIAAxkBAAIDT2nOlgJFMBSJSqBULhYTkSS0dmsdAAIjCgACMf9ZS1Zt8gABJXZpWDoE", "caption": "🎬 ГП 4: Кубок огня\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 5. Орден Феникса", "file_id": "BAACAgQAAxkBAAIDUWnOlhMJxYJ_yWbXZLJ25ZPTS0JJAAKgDAAC2L_JULzvFz_NQdPnOgQ", "caption": "🎬 ГП 5: Орден Феникса\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 6. Принц-полукровка", "file_id": "BAACAgIAAxkBAAIDU2nOliUy9hL1ssJ5e-kORyqEL5DgAAIlCgACMf9ZS2Yi3TnE3abiOgQ", "caption": "🎬 ГП 6: Принц-полукровка\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 7. Дары Смерти 1", "file_id": "BAACAgIAAxkBAAIDVWnOljREOEjf4v0o0Sz2DHs1Zm3xAALpBAACKP2pSAiPJCewUqfUOgQ", "caption": "🎬 ГП 7: Дары Смерти 1\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 8. Дары Смерти 2", "file_id": "BAACAgIAAxkBAAIDV2nOlkSVUkDW2WL6f4WrUmapIQABcQACZQQAAsSsoUjP9fxCTDgDNzoE", "caption": "🎬 ГП 8: Дары Смерти 2\n📢 Kanal: @harry_potter_fans_uz"},
+    {"name": "🎬 1. Философский камень", "file_id": "BAACAgIAAxkBAAIDSWnOlb1_AAGAYgWnEGm3bGJfXjFeggACKAoAAjH_WUs4J1skcGE7GToE", "caption": "🎬 Название: ГП 1: Философский камень\n⏱ Время: 2.5 часа\n🌐 Язык: Русский\n🎞 Качество: HD\n📢 Канал: @harry_potter_fans_uz"},
+    {"name": "🎬 2. Тайная комната", "file_id": "BAACAgIAAxkBAAIDS2nOld1zIwQEOIo_XNaB20dS4yBKAAImCgACMf9ZS8YV5UtV-2QLOgQ", "caption": "🎬 Название: ГП 2: Тайная комната\n⏱ Время: 2.5 часа\n🌐 Язык: Русский\n🎞 Качество: HD\n📢 Канал: @harry_potter_fans_uz"},
+    {"name": "🎬 3. Узник Азкабана", "file_id": "BAACAgIAAxkBAAIDTWnOlfGGh3F6yuTdkzg6YDll0LciAAInCgACMf9ZSxH4i6-D8wN7OgQ", "caption": "🎬 Название: ГП 3: Узник Азкабана\n⏱ Время: 2.5 часа\n🌐 Язык: Русский\n🎞 Качество: HD\n📢 Канал: @harry_potter_fans_uz"},
+    {"name": "🎬 4. Кубок огня", "file_id": "BAACAgIAAxkBAAIDT2nOlgJFMBSJSqBULhYTkSS0dmsdAAIjCgACMf9ZS1Zt8gABJXZpWDoE", "caption": "🎬 Название: ГП 4: Кубок огня\n⏱ Время: 2.5 часа\n🌐 Язык: Русский\n🎞 Качество: HD\n📢 Канал: @harry_potter_fans_uz"},
+    {"name": "🎬 5. Орден Феникса", "file_id": "BAACAgQAAxkBAAIDUWnOlhMJxYJ_yWbXZLJ25ZPTS0JJAAKgDAAC2L_JULzvFz_NQdPnOgQ", "caption": "🎬 Название: ГП 5: Орден Феникса\n⏱ Время: 2.5 часа\n🌐 Язык: Русский\n🎞 Качество: HD\n📢 Канал: @harry_potter_fans_uz"},
+    {"name": "🎬 6. Принц-полукровка", "file_id": "BAACAgIAAxkBAAIDU2nOliUy9hL1ssJ5e-kORyqEL5DgAAIlCgACMf9ZS2Yi3TnE3abiOgQ", "caption": "🎬 Название: ГП 6: Принц-полукровка\n⏱ Время: 2.5 часа\n🌐 Язык: Русский\n🎞 Качество: HD\n📢 Канал: @harry_potter_fans_uz"},
+    {"name": "🎬 7. Дары Смерти 1", "file_id": "BAACAgIAAxkBAAIDVWnOljREOEjf4v0o0Sz2DHs1Zm3xAALpBAACKP2pSAiPJCewUqfUOgQ", "caption": "🎬 Название: ГП 7: Дары Смерти 1\n⏱ Время: 2.5 часа\n🌐 Язык: Русский\n🎞 Качество: HD\n📢 Канал: @harry_potter_fans_uz"},
+    {"name": "🎬 8. Дары Смерти 2", "file_id": "BAACAgIAAxkBAAIDV2nOlkSVUkDW2WL6f4WrUmapIQABcQACZQQAAsSsoUjP9fxCTDgDNzoE", "caption": "🎬 Название: ГП 8: Дары Смерти 2\n⏱ Время: 2.5 часа\n🌐 Язык: Русский\n🎞 Качество: HD\n📢 Канал: @harry_potter_fans_uz"},
 ]
 
 MOVIES_EN = [
-    {"name": "🎬 1. Sorcerer's Stone", "file_id": "BAACAgQAAxkBAAIDWWnOltDBBkgHlm6EC5zZ1__vemdSAAJ_BwACrMaBUKRYUpDTm11oOgQ", "caption": "🎬 HP 1: Sorcerer's Stone\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 2. Chamber of Secrets", "file_id": "BAACAgQAAxkBAAIDW2nOlynvMgKOoF9hn7r8CcccUZo-AAKBBwACrMaBUM7959H4o01HOgQ", "caption": "🎬 HP 2: Chamber of Secrets\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 3. Prisoner of Azkaban", "file_id": "BAACAgQAAxkBAAIDXWnOlz4dtzVGjgW6u9JUz1frSKKNAAKHBwACrMaBUKP9MbVImI-uOgQ", "caption": "🎬 HP 3: Prisoner of Azkaban\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 4. Goblet of Fire", "file_id": "BAACAgQAAxkBAAIDX2nOl0-8b1wOF8VhdnLiVTmx2lQ0AAKOBwACrMaBUNmv6Ega62iuOgQ", "caption": "🎬 HP 4: Goblet of Fire\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 5. Order of the Phoenix", "file_id": "BAACAgQAAxkBAAIDYWnOl1-UJIPeUi9iwkH5xveOb1cBAAKVBwACrMaBUC7iNQH-PQokOgQ", "caption": "🎬 HP 5: Order of the Phoenix\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 6. Half-Blood Prince", "file_id": "BAACAgQAAxkBAAIDY2nOl28ipXgwucm7uiCsJ00NrHObAAKNCAACqwKBUHgSmGHyOYgROgQ", "caption": "🎬 HP 6: Half-Blood Prince\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 7. Deathly Hallows 1", "file_id": "BAACAgQAAxkBAAIDZWnOl36nQLjV7TlugAMlJE6y1xFKAAKXCAACqwKBUMiAIxlbsJmOOgQ", "caption": "🎬 HP 7: Deathly Hallows 1\n📢 Kanal: @harry_potter_fans_uz"},
-    {"name": "🎬 8. Deathly Hallows 2", "file_id": "BAACAgQAAxkBAAIDZ2nOl41aUWcgKRzzP_r-suInRRSKAAKkCAACqwKBUC733-s2FjB3OgQ", "caption": "🎬 HP 8: Deathly Hallows 2\n📢 Kanal: @harry_potter_fans_uz"},
+    {"name": "🎬 1. Sorcerer's Stone", "file_id": "BAACAgQAAxkBAAIDWWnOltDBBkgHlm6EC5zZ1__vemdSAAJ_BwACrMaBUKRYUpDTm11oOgQ", "caption": "🎬 Name: HP 1: Sorcerer's Stone\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
+    {"name": "🎬 2. Chamber of Secrets", "file_id": "BAACAgQAAxkBAAIDW2nOlynvMgKOoF9hn7r8CcccUZo-AAKBBwACrMaBUM7959H4o01HOgQ", "caption": "🎬 Name: HP 2: Chamber of Secrets\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
+    {"name": "🎬 3. Prisoner of Azkaban", "file_id": "BAACAgQAAxkBAAIDXWnOlz4dtzVGjgW6u9JUz1frSKKNAAKHBwACrMaBUKP9MbVImI-uOgQ", "caption": "🎬 Name: HP 3: Prisoner of Azkaban\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
+    {"name": "🎬 4. Goblet of Fire", "file_id": "BAACAgQAAxkBAAIDX2nOl0-8b1wOF8VhdnLiVTmx2lQ0AAKOBwACrMaBUNmv6Ega62iuOgQ", "caption": "🎬 Name: HP 4: Goblet of Fire\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
+    {"name": "🎬 5. Order of the Phoenix", "file_id": "BAACAgQAAxkBAAIDYWnOl1-UJIPeUi9iwkH5xveOb1cBAAKVBwACrMaBUC7iNQH-PQokOgQ", "caption": "🎬 Name: HP 5: Order of the Phoenix\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
+    {"name": "🎬 6. Half-Blood Prince", "file_id": "BAACAgQAAxkBAAIDY2nOl28ipXgwucm7uiCsJ00NrHObAAKNCAACqwKBUHgSmGHyOYgROgQ", "caption": "🎬 Name: HP 6: Half-Blood Prince\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
+    {"name": "🎬 7. Deathly Hallows 1", "file_id": "BAACAgQAAxkBAAIDZWnOl36nQLjV7TlugAMlJE6y1xFKAAKXCAACqwKBUMiAIxlbsJmOOgQ", "caption": "🎬 Name: HP 7: Deathly Hallows 1\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
+    {"name": "🎬 8. Deathly Hallows 2", "file_id": "BAACAgQAAxkBAAIDZ2nOl41aUWcgKRzzP_r-suInRRSKAAKkCAACqwKBUC733-s2FjB3OgQ", "caption": "🎬 Name: HP 8: Deathly Hallows 2\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
 ]
 
 HOUSES_DETAILS = {
@@ -121,8 +123,9 @@ async def check_sub(user_id):
         m_ch = await bot.get_chat_member(CHANNEL, user_id)
         m_gr = await bot.get_chat_member(GROUP, user_id)
         valid = ['member', 'administrator', 'creator']
-        return m_ch.status in valid, m_gr.status in valid
-    except: return False, False
+        # Ikkala shart ham to'g'ri bo'lishi kerak
+        return (m_ch.status in valid) and (m_gr.status in valid)
+    except: return False
 
 def main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -130,7 +133,15 @@ def main_menu():
     markup.add(KeyboardButton("🎩 Saralovchi shlyapa"))
     return markup
 
-# --- JAZO TIZIMI (EMOTSIONAL) ---
+# --- AVTO-OCHIRISH FUNKSIYASI ---
+async def delete_after_delay(message: types.Message, delay: int):
+    await asyncio.sleep(delay)
+    try:
+        await message.delete()
+    except:
+        pass
+
+# --- JAZO TIZIMI ---
 @dp.message_handler(commands=["mute", "ban", "unmute"])
 async def handle_punishment(message: types.Message):
     if message.chat.type == 'private': return
@@ -138,9 +149,8 @@ async def handle_punishment(message: types.Message):
     sender_id = message.from_user.id
     sender_member = await message.chat.get_member(sender_id)
     
-    # 1. Admin emaslar uchun
     if not sender_member.is_chat_admin():
-        return await message.reply(f"🧙‍♂️ Kechirasiz {message.from_user.first_name}, sizda sehrli tayoqcha 🪄 yo'q! Avval sehrli tayoqchaga ega bo'ling.")
+        return await message.reply(f"🧙‍♂️ Kechirasiz {get_mention(message.from_user)}, sizda sehrli tayoqcha 🪄 yo'q! Avval sehrli tayoqchaga ega bo'ling.")
 
     if not message.reply_to_message:
         return await message.reply("⚠️ Sehr ishlatish uchun biror kishiga reply qiling!")
@@ -149,21 +159,21 @@ async def handle_punishment(message: types.Message):
     target_member = await message.chat.get_member(target.id)
     bot_obj = await bot.get_me()
 
-    # 2. Adminni jazolashga urinsa
     if target_member.is_chat_admin() or target.id == bot_obj.id:
-        return await message.reply("🧙‍♂️ Kechirasiz, lekin o'zingizni yoki boshqa bir sehrgar adminni jazolash taqiqlangan! Bu Hogwarts qonunlariga zid.")
+        return await message.reply("🧙‍♂️ Kechirasiz, lekin o'zingizni yoki boshqa bir sehrgar adminni jazolash taqiqlangan!")
 
     cmd = message.get_command()
     try:
         if cmd == "/ban":
             await message.chat.kick(target.id)
-            await message.answer(f"🚫 {target.first_name} ⛓ Hogwarts o'quvchisi yovuz yo'lga kirgani uchun Azkabanga ravona bo'ldi!")
+            await message.answer(f"🚫 {get_mention(target)} ⛓ Hogwarts o'quvchisi yovuz yo'lga kirgani uchun Azkabanga ravona bo'ldi!")
         elif cmd == "/mute":
-            await message.chat.restrict(target.id, permissions=types.ChatPermissions(can_send_messages=False), until_date=int(time.time())+3600)
-            await message.answer(f"🙊 {target.first_name} Silencio afsuni ostida! 1 soatga ovozi o'chirildi.")
+            # 5 daqiqa (300 soniya)
+            await message.chat.restrict(target.id, permissions=types.ChatPermissions(can_send_messages=False), until_date=int(time.time())+300)
+            await message.answer(f"🙊 {get_mention(target)} Silencio afsuni ostida! 5 daqiqaga ovozi o'chirildi.")
         elif cmd == "/unmute":
             await message.chat.restrict(target.id, permissions=types.ChatPermissions(can_send_messages=True))
-            await message.answer(f"🔊 {target.first_name}dan Silencio afsuni yechildi.")
+            await message.answer(f"🔊 {get_mention(target)}dan Silencio afsuni yechildi.")
     except Exception as e:
         await message.reply(f"❌ Sehr amalga oshmadi: {str(e)}")
 
@@ -176,35 +186,41 @@ async def start_cmd(message: types.Message):
         users[str(user.id)] = user.first_name
         save_data(USERS_FILE, users)
 
-    in_ch, in_gr = await check_sub(user.id)
-    if not in_ch or not in_gr:
+    is_subscribed = await check_sub(user.id)
+    if not is_subscribed:
         btn = InlineKeyboardMarkup(row_width=1).add(
             InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"),
             InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"),
             InlineKeyboardButton("✅ Tekshirish", callback_data="recheck_sub")
         )
-        return await message.answer(f"Salom {user.first_name}!\n\nBotdan foydalanish uchun kanal va guruhga a'zo bo'ling.", reply_markup=btn)
+        return await message.answer(f"Salom {get_mention(user)}!\n\nBotdan foydalanish uchun kanal va guruhga a'zo bo'ling.", reply_markup=btn)
     
-    await message.answer(f"Salom {user.first_name}!\nHogwarts olamiga xush kelibsiz! ✨", reply_markup=main_menu())
+    await message.answer(f"Salom {get_mention(user)}!\nHogwarts olamiga xush kelibsiz! ✨", reply_markup=main_menu())
 
 @dp.callback_query_handler(lambda c: c.data == "recheck_sub")
 async def recheck_callback(callback: types.CallbackQuery):
-    in_ch, in_gr = await check_sub(callback.from_user.id)
-    if in_ch and in_gr:
+    is_subscribed = await check_sub(callback.from_user.id)
+    if is_subscribed:
         await callback.message.delete()
-        await bot.send_message(callback.message.chat.id, f"Salom {callback.from_user.first_name}!\nHogwarts olamiga xush kelibsiz! ✨", reply_markup=main_menu())
+        await bot.send_message(callback.message.chat.id, f"Salom {get_mention(callback.from_user)}!\nHogwarts olamiga xush kelibsiz! ✨", reply_markup=main_menu())
     else:
         await callback.answer("Siz hali ham barcha shartlarni bajarmadingiz! ❌", show_alert=True)
 
-# --- KITOBLAR VA KINOLAR MENYULARI ---
+# --- KITOBLAR VA KINOLAR ---
 @dp.message_handler(lambda m: m.text == "📚 Kitoblar")
 async def book_lang(message: types.Message):
     btn = InlineKeyboardMarkup(row_width=2).add(
+        InlineKeyboardButton("📚 Hammasi birda (1-7)", callback_data="get_all_books"),
         InlineKeyboardButton("🇺🇿 O'zbekcha", callback_data="b_uz"),
         InlineKeyboardButton("🇬🇧 Inglizcha", callback_data="b_en"),
         InlineKeyboardButton("⬅️ Orqaga", callback_data="home")
     )
-    await message.answer("Kitoblar tilini tanlang:", reply_markup=btn)
+    await message.answer("Kitoblar bo'limini tanlang:", reply_markup=btn)
+
+@dp.callback_query_handler(lambda c: c.data == "get_all_books")
+async def all_books_sender(callback: types.CallbackQuery):
+    await bot.send_document(callback.message.chat.id, ALL_IN_ONE_BOOK["file_id"], caption=ALL_IN_ONE_BOOK["caption"])
+    await callback.answer()
 
 @dp.message_handler(lambda m: m.text == "🎬 Kinolar")
 async def movie_lang(message: types.Message):
@@ -261,18 +277,18 @@ async def sorting_hat(message: types.Message):
         save_data(HOUSES_FILE, data)
     
     h = HOUSES_DETAILS[data[uid]]
-    msg = await message.answer("🧐 *O'ylayapman...*")
+    msg = await message.answer("🧐 <b>O'ylayapman...</b>")
     await asyncio.sleep(2)
     
-    final_text = (f"{h['txt']}\n\n✨ *Hamma narsa ayon!* ✨\n\nFakultetingiz: {h['emoji']} <b>{data[uid]}</b>\n🔑 Kalit so'z: <code>{h['kalit']}</code>\n\nKalit so'zni shlyapaga yuboring 👇")
+    final_text = (f"{h['txt']}\n\n✨ <b>Hamma narsa ayon!</b> ✨\n\nFakultetingiz: {h['emoji']} <b>{data[uid]}</b>\n🔑 Kalit so'z: <code>{h['kalit']}</code>\n\nKalit so'zni shlyapaga yuboring 👇")
     btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga borish", url=f"https://t.me/{SHLYAPA_USER}"))
-    await msg.edit_text(final_text, reply_markup=btn, parse_mode="HTML")
+    await msg.edit_text(final_text, reply_markup=btn)
 
 # --- ADMIN PANEL ---
 @dp.message_handler(commands=["admins"], user_id=ADMIN_ID)
 async def admin_panel(message: types.Message):
     txt = ("🧙‍♂️ <b>Admin Panel:</b>\n\n/send - Reklama\n/getid - Fayl ID\n/ban - Azkaban\n/mute - Silencio")
-    await message.answer(txt, parse_mode="HTML")
+    await message.answer(txt)
 
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def ad_start(message: types.Message):
@@ -291,7 +307,7 @@ async def ad_process(message: types.Message, state: FSMContext):
     await message.answer(f"✅ Xabar {count} kishiga yuborildi.")
     await state.finish()
 
-# --- WELCOME ---
+# --- WELCOME VA AVTO OCHIRISH ---
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def on_new_member(message: types.Message):
     data = load_data(WELCOME_FILE)
@@ -301,12 +317,19 @@ async def on_new_member(message: types.Message):
         InlineKeyboardButton("🎩 Fakultet", url=f"https://t.me/{SHLYAPA_USER}?start=sorting")
     )
     for user in message.new_chat_members:
+        mention = get_mention(user)
         if cid in data:
             conf = data[cid]
-            cap = conf['text'].replace("{name}", user.first_name)
-            if conf['f_type'] == "photo": await bot.send_photo(cid, conf['f_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
-            elif conf['f_type'] == "video": await bot.send_video(cid, conf['f_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
-            else: await bot.send_message(cid, cap, reply_markup=btn, parse_mode="HTML")
+            cap = conf['text'].replace("{name}", mention)
+            if conf['f_type'] == "photo": 
+                m = await bot.send_photo(cid, conf['f_id'], caption=cap, reply_markup=btn)
+            elif conf['f_type'] == "video": 
+                m = await bot.send_video(cid, conf['f_id'], caption=cap, reply_markup=btn)
+            else: 
+                m = await bot.send_message(cid, cap, reply_markup=btn)
+            
+            # 10 daqiqadan keyin o'chirish (600 soniya)
+            asyncio.create_task(delete_after_delay(m, 600))
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
