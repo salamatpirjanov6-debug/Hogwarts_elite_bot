@@ -45,7 +45,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- KITOOBLAR VA KINOLAR BAZASI (O'zgartirilmagan) ---
+# --- KITOOBLAR VA KINOLAR BAZASI ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE", "caption": "📖 Nomi: Garri Potter va Falsafiy tosh\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE", "caption": "📖 Nomi: Garri Potter va Maxfiy hujra\n\nKanal: @harry_potter_fans_uz"},
@@ -147,7 +147,6 @@ async def check_sub(user_id):
     except: return False, False
 
 # --- MODERATORLIK BUYRUQLARI ---
-
 @dp.message_handler(commands=["mute"])
 async def mute_user(message: types.Message):
     if message.chat.type == 'private': return
@@ -211,14 +210,16 @@ async def set_forced_channel(message: types.Message):
     save_data(FORCED_CHANNELS_FILE, data)
     await message.reply(f"✅ Ushbu guruh uchun majburiy kanal {args} qilib belgilandi.")
 
-# --- START BUYRUG'I ---
+# --- START BUYRUG'I (Kanal va Guruh obunasi bilan) ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     if message.chat.type != 'private':
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("💬 Shaxsiy chat", url=f"https://t.me/{BOT_USERNAME}"))
         return await message.reply(f"Salom {message.from_user.first_name}! Bot bilan shaxsiy chatda gaplashing.", reply_markup=btn)
+    
     register_user(message.from_user.id)
     in_ch, in_gr = await check_sub(message.from_user.id)
+    
     if not in_ch or not in_gr:
         btn = InlineKeyboardMarkup(row_width=1)
         if not in_ch: btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
@@ -226,6 +227,7 @@ async def start_cmd(message: types.Message):
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         await message.answer(f"Salom {message.from_user.first_name}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
         return
+        
     user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
     await message.answer(f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
 
@@ -249,23 +251,21 @@ async def private_menus(message: types.Message):
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
-# --- FILE ID OLUVCHI (FAQAT ADMIN UCHUN) ---
+# --- FILE ID OLUVCHI (Faqat shaxsiyda va Admin uchun) ---
 @dp.message_handler(content_types=['document', 'video', 'photo', 'audio'], user_id=ADMIN_ID)
 async def get_file_id_handler(message: types.Message):
+    if message.chat.type != 'private': return # Guruhda javob bermaydi
+    
     file_id = ""
-    if message.document:
-        file_id = message.document.file_id
-    elif message.video:
-        file_id = message.video.file_id
-    elif message.photo:
-        file_id = message.photo[-1].file_id
-    elif message.audio:
-        file_id = message.audio.file_id
+    if message.document: file_id = message.document.file_id
+    elif message.video: file_id = message.video.file_id
+    elif message.photo: file_id = message.photo[-1].file_id
+    elif message.audio: file_id = message.audio.file_id
     
     if file_id:
         await message.reply(f"<code>{file_id}</code>", parse_mode="HTML")
 
-# --- YANGI A'ZONI KUTIB OLISH (WELCOME HANDLER) ---
+# --- YANGI A'ZONI KUTIB OLISH ---
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def welcome_new_member(message: types.Message):
     settings = load_data(WELCOME_FILE)
@@ -280,8 +280,8 @@ async def welcome_new_member(message: types.Message):
         
         btn = InlineKeyboardMarkup(row_width=1)
         btn.add(
-            InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=shlyapa"),
-            InlineKeyboardButton("📢 Kanalimiz", url=f"https://t.me/{CHANNEL[1:]}")
+            InlineKeyboardButton("📢 Kanalga qo'shilish", url=f"https://t.me/{CHANNEL[1:]}"),
+            InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=start")
         )
         
         try:
@@ -296,6 +296,7 @@ async def welcome_new_member(message: types.Message):
         except Exception as e:
             logging.error(f"Welcome error: {e}")
 
+# --- CALLBACK HANDLER ---
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
     uid = callback.message.chat.id
@@ -346,7 +347,7 @@ async def callback_handler(callback: types.CallbackQuery):
         elif l == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"], caption=MOVIES_EN[idx]["caption"])
     await callback.answer()
 
-# --- REKLAMA VA WELCOME ---
+# --- REKLAMA VA WELCOME ADMIN ---
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
 async def send_ads(message: types.Message):
     text = message.get_args(); reply = message.reply_to_message
@@ -378,7 +379,7 @@ async def save_welcome_step(message: types.Message):
     save_data(WELCOME_FILE, settings); dp.message_handlers.unregister(save_welcome_step)
     await message.reply("✅ Saqlandi.")
 
-# --- GURUHDAGI HABARLARNI TEKSHIRISH (MAJBURIY OBUNA) ---
+# --- GURUHDAGI HABARLARNI TEKSHIRISH ---
 @dp.message_handler(lambda m: m.chat.type in ['group', 'supergroup'])
 async def check_group_sub(message: types.Message):
     member = await message.chat.get_member(message.from_user.id)
