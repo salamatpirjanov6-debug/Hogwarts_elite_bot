@@ -45,11 +45,11 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- KITOOBLAR VA KINOLAR BAZASI (O'zgartirilmagan) ---
+# --- KITOOBLAR VA KINOLAR BAZASI ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE", "caption": "📖 Nomi: Garri Potter va Falsafiy tosh\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE", "caption": "📖 Nomi: Garri Potter va Maxfiy hujra\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "📖 3. Azkaban maxbusi", "file_id": "BAACAgIAAxkBAAIIAmnh33byd1kbNFiGMlN7rO4P-drIAAJHhQAC4ZzoShs24A6MhRIQOwQ", "caption": "📖 Nomi: Garri Potter va Azkaban mahbusi\n\nKanal: @harry_potter_fans_uz"},
+    {"name": "📖 3. Azkaban maxbusi", "file_id": "BQACAgIAAxkBAANlacuwQSg_C6sntUxgp1s-EwTRw10AAgkHAAJfZdhIu3sjwnyKCrQ6BA", "caption": "📖 Nomi: Garri Potter va Azkaban mahbusi\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 4. Otashli jom", "file_id": "BQACAgIAAxkBAANnacuwaXcFuxDS8ll0QQ8YYgjxNxcAAjMAAwSsEEoCrCr_9txjwDoE", "caption": "📖 Nomi: Garri Potter va Otashli jom\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 5. Kaknus ordeni", "file_id": "BQACAgIAAxkBAANpacuwkFa_xAhxOPRwz6_O5mhZzkMAAmsAA-A7GEoe0fZOrviJXjoE", "caption": "📖 Nomi: Garri Potter va Kaknus ordeni\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 6. Chalazot shaxzoda", "file_id": "BQACAgIAAxkBAANracuwqVy7l3UaOeEsHvDN8DYyYK4AApIAAzXcUEotF3tao-vWxToE", "caption": "📖 Nomi: Garri Potter va Chalazot shahzoda\n\nKanal: @harry_potter_fans_uz"},
@@ -200,6 +200,12 @@ async def ban_user(message: types.Message):
         await message.answer(f"🚫 <b>{message.reply_to_message.from_user.first_name}</b> haydaldi.\n📄 <b>Sabab:</b> {reason}", parse_mode="HTML")
     except Exception as e: await message.reply(f"Xatolik: {e}")
 
+# --- GURUHGA YANGI OBUNACHI KELGANDA ---
+@dp.message_handler(content_types=['new_chat_members'])
+async def welcome_new_member(message: types.Message):
+    for user in message.new_chat_members:
+        await message.answer(f"Xush kelibsiz {user.mention} ✨\nHogvarts olamiga qo'shilganingizdan xursandmiz!")
+
 # --- MAJBURIY OBUNA SOZLAMALARI ---
 @dp.message_handler(commands=["setchannel"], user_id=ADMIN_ID)
 async def set_forced_channel(message: types.Message):
@@ -228,6 +234,13 @@ async def start_cmd(message: types.Message):
         return
     user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
     await message.answer(f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
+
+# --- ADMIN FILE ID OLISH ---
+@dp.message_handler(content_types=['video', 'document'], chat_type='private')
+async def handle_files(message: types.Message):
+    if message.from_user.id == ADMIN_ID:
+        fid = message.video.file_id if message.video else message.document.file_id
+        await message.reply(f"✅ File ID: <code>{fid}</code>", parse_mode="HTML")
 
 # --- ASOSIY HANDLERLAR ---
 @dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
@@ -298,14 +311,6 @@ async def callback_handler(callback: types.CallbackQuery):
         elif l == "ru": await bot.send_video(uid, MOVIES_RU[idx]["file_id"], caption=MOVIES_RU[idx]["caption"])
         elif l == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"], caption=MOVIES_EN[idx]["caption"])
     await callback.answer()
-
-# --- FILE ID OLISH (FAQAT SHAXSIY CHATDA VA FAQAT ADMIN UCHUN) ---
-@dp.message_handler(content_types=['video', 'document'])
-async def get_file_id(message: types.Message):
-    if message.chat.type == 'private' and message.from_user.id == ADMIN_ID:
-        fid = message.video.file_id if message.video else message.document.file_id
-        t = "Video" if message.video else "Hujjat"
-        await message.reply(f"✅ {t} file_id: <code>{fid}</code>", parse_mode="HTML")
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
