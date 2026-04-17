@@ -14,7 +14,7 @@ from aiogram.types import (
 )
 
 # --- SOZLAMALAR ---
-API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85Lh_XFsc-2n0L8O956T8Xw68Y9NqE")
+API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85L_XFsc-2n0L8O956T8Xw68Y9NqE")
 CHANNEL = "@harry_potter_fans_uz"
 GROUP = "@hogwarts_elite"
 ADMIN_ID = 7670992727
@@ -210,7 +210,7 @@ async def set_forced_channel(message: types.Message):
     save_data(FORCED_CHANNELS_FILE, data)
     await message.reply(f"✅ Ushbu guruh uchun majburiy kanal {args} qilib belgilandi.")
 
-# --- START BUYRUG'I (Tahrirlangan) ---
+# --- START BUYRUG'I (Kanal va Guruh obunasi tugmalari bilan) ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     if message.chat.type != 'private':
@@ -225,9 +225,12 @@ async def start_cmd(message: types.Message):
     
     if not in_ch or not in_gr:
         btn = InlineKeyboardMarkup(row_width=1)
-        # Obuna bo'lish tugmalari: Kanal va Guruh
-        if not in_ch: btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
-        if not in_gr: btn.add(InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"))
+        # OBUNA TUGMALARI
+        if not in_ch:
+            btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
+        if not in_gr:
+            btn.add(InlineKeyboardButton("👥 Guruhga qo'shilish", url=f"https://t.me/{GROUP[1:]}"))
+            
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         
         await message.answer(f"Salom {user_mention}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn, parse_mode="HTML")
@@ -255,10 +258,10 @@ async def private_menus(message: types.Message):
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
-# --- FILE ID OLUVCHI ---
+# --- FILE ID OLUVCHI (Faqat shaxsiyda va Admin uchun) ---
 @dp.message_handler(content_types=['document', 'video', 'photo', 'audio'], user_id=ADMIN_ID)
 async def get_file_id_handler(message: types.Message):
-    if message.chat.type != 'private': return 
+    if message.chat.type != 'private': return
     
     file_id = ""
     if message.document: file_id = message.document.file_id
@@ -310,7 +313,7 @@ async def callback_handler(callback: types.CallbackQuery):
             await callback.message.delete()
             user_link = f"<a href='tg://user?id={callback.from_user.id}'>{callback.from_user.first_name}</a>"
             await bot.send_message(uid, f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
-        else: await callback.answer("Obuna bo'ling!", show_alert=True)
+        else: await callback.answer("Hali obuna bo'lmadingiz!", show_alert=True)
     elif callback.data == "back_to_main":
         await callback.message.delete(); await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
     elif callback.data == "lang_book_uz":
@@ -395,7 +398,6 @@ async def check_group_sub(message: types.Message):
             check = await bot.get_chat_member(target_channel, message.from_user.id)
             if check.status not in ACTIVE_STATUSES:
                 await message.delete()
-                # Ismni profilga havola qilib yasash
                 user_mention = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
                 btn = InlineKeyboardMarkup().add(InlineKeyboardButton("📢 Kanalga obuna bo'lish", url=f"https://t.me/{target_channel[1:]}"))
                 await message.answer(f"⚠️ {user_mention}, xabar yuborish uchun kanalga a'zo bo'ling!", reply_markup=btn, parse_mode="HTML")
