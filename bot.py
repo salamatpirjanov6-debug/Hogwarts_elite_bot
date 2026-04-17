@@ -28,7 +28,6 @@ dp = Dispatcher(bot)
 HOUSES_FILE = "user_houses.json"
 USERS_FILE = "bot_users.json"
 WELCOME_FILE = "welcome_settings.json"
-FORCED_CHANNELS_FILE = "forced_channels.json"
 
 def load_data(file):
     if os.path.exists(file):
@@ -40,75 +39,76 @@ def load_data(file):
 def save_data(file, data):
     with open(file, "w") as f: json.dump(data, f, indent=4)
 
-def register_user(user_id):
-    users = load_data(USERS_FILE)
-    if str(user_id) not in users:
-        users[str(user_id)] = True
-        save_data(USERS_FILE, users)
+# --- TO'LIQ KITOOBLAR BAZASI ---
+BOOKS = {
+    "uz": [
+        {"name": "📖 1. Falsafiy tosh", "id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE"},
+        {"name": "📖 2. Maxfiy xujra", "id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE"},
+        {"name": "📖 3. Azkaban maxbusi", "id": "BQACAgIAAxkBAANlacuwQSg_C6sntUxgp1s-EwTRw10AAgkHAAJfZdhIu3sjwnyKCrQ6BA"},
+        {"name": "📖 4. Otashli jom", "id": "BQACAgIAAxkBAANnacuwaXcFuxDS8ll0QQ8YYgjxNxcAAjMAAwSsEEoCrCr_9txjwDoE"},
+        {"name": "📖 5. Kaknus ordeni", "id": "BQACAgIAAxkBAANpacuwkFa_xAhxOPRwz6_O5mhZzkMAAmsAA-A7GEoe0fZOrviJXjoE"},
+        {"name": "📖 6. Chalazot shaxzoda", "id": "BQACAgIAAxkBAANracuwqVy7l3UaOeEsHvDN8DYyYK4AApIAAzXcUEotF3tao-vWxToE"},
+        {"name": "📖 7. Ajal tuhfalari", "id": "BQACAgIAAxkBAANtacuwwS1FlLl5SubbQJDSn6ghyyoAAg8CAAKpCIBJRzBcQ4IMdzA6BA"},
+    ],
+    "en": [
+        {"name": "📖 1. Philosopher's Stone", "id": "BQACAgUAAxkBAAIDOWnOk3dbX8E-yaAVFy_xfeP6IqKGAAL_AwACn_N4VR4lpjl-n1tZOgQ"},
+        {"name": "📖 2. Chamber of Secrets", "id": "BQACAgUAAxkBAAIDO2nOk9iTjQ_vULXaRoo7BPiFoyESAAMEAAKf83hV774CCp3aF146BA"},
+        {"name": "📖 3. Prisoner of Azkaban", "id": "BQACAgUAAxkBAAIDPWnOk_jB-bYD-xsrsq6Y1xveD1mBAAL-AwACn_N4Vd-iiVWRVt-DOgQ"},
+        {"name": "📖 4. Goblet of Fire", "id": "BQACAgUAAxkBAAIDP2nOlAzIskBV4m7d6OgD3G1o2FOEAAL7AwACn_N4VdM2NXmcWgR-OgQ"},
+        {"name": "📖 5. Order of the Phoenix", "id": "BQACAgUAAxkBAAIDQWnOlB5zRwpHT1wOS9diXcxjCcogAAL5AwACn_N4VQGCfrTny6GKOgQ"},
+        {"name": "📖 6. Half-Blood Prince", "id": "BQACAgUAAxkBAAIDQ2nOlDGDPZqe9r1QZbUUJDj4-L0UAAL6AwACn_N4VWeuyWoTm2SnOgQ"},
+        {"name": "📖 7. Deathly Hallows", "id": "BQACAgUAAxkBAAIDRWnOlEOi6oyRRafs-Y9Yl1Lo19fjAAL8AwACn_N4VdOVKXxjV5MlOgQ"},
+    ],
+    "all": [{"name": "📚 Hammasi birda (1-7)", "id": "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ"}]
+}
 
-# --- KITOOBLAR VA KINOLAR BAZASI (O'zgarishsiz) ---
-BOOKS_UZ = [
-    {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE", "caption": "📖 Nomi: Garri Potter va Falsafiy tosh\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE", "caption": "📖 Nomi: Garri Potter va Maxfiy hujra\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "📖 3. Azkaban maxbusi", "file_id": "BQACAgIAAxkBAANlacuwQSg_C6sntUxgp1s-EwTRw10AAgkHAAJfZdhIu3sjwnyKCrQ6BA", "caption": "📖 Nomi: Garri Potter va Azkaban mahbusi\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "📖 4. Otashli jom", "file_id": "BQACAgIAAxkBAANnacuwaXcFuxDS8ll0QQ8YYgjxNxcAAjMAAwSsEEoCrCr_9txjwDoE", "caption": "📖 Nomi: Garri Potter va Otashli jom\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "📖 5. Kaknus ordeni", "file_id": "BQACAgIAAxkBAANpacuwkFa_xAhxOPRwz6_O5mhZzkMAAmsAA-A7GEoe0fZOrviJXjoE", "caption": "📖 Nomi: Garri Potter va Kaknus ordeni\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "📖 6. Chalazot shaxzoda", "file_id": "BQACAgIAAxkBAANracuwqVy7l3UaOeEsHvDN8DYyYK4AApIAAzXcUEotF3tao-vWxToE", "caption": "📖 Nomi: Garri Potter va Chalazot shahzoda\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "📖 7. Ajal tuhfalari", "file_id": "BQACAgIAAxkBAANtacuwwS1FlLl5SubbQJDSn6ghyyoAAg8CAAKpCIBJRzBcQ4IMdzA6BA", "caption": "📖 Nomi: Garri Potter va Ajal tuhfalari\n\nKanal: @harry_potter_fans_uz"},
-]
+# --- TO'LIQ KINOLAR BAZASI ---
+MOVIES = {
+    "uz": [
+        {"name": "🎬 1. Hikmatlar toshi", "id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA"},
+        {"name": "🎬 2. Maxfiy hujra", "id": "BAACAgIAAxkBAAOFacu0BPXsr3WF3yYGmJHdjVeDjSMAAmSFAALhnOhKpL77RQyPlaE6BA"},
+        {"name": "🎬 3. Azkoban maxbusi", "id": "BAACAgIAAxkBAAOHacu0W-SHgaTmaKyMu7N7S4D-9NQAAn6FAALhnOhKpYQqLyzBd-k6BA"},
+        {"name": "🎬 4. Alanga kubogi", "id": "BAACAgIAAxkBAAOJacu1AoUKWQUInEPM0DGXvSZhueUAAqmFAALhnOhKZF9wiu0Drs6BA"},
+        {"name": "🎬 5. Feniks jamiyati", "id": "BAACAgIAAxkBAAOHacu0W-SHgaTmaKyMu7N7S4D-9NQAAn6FAALhnOhKpYQqLyzBd-k6BA"},
+        {"name": "🎬 6. Tilsim Shahzoda", "id": "BAACAgIAAxkBAAONacu1kktAejSVYq9GM3xmHXGzrfAAAoyFAALhnOhKrgZBW8bL1Ws6BA"},
+        {"name": "🎬 7. Ajal tuhfasi 1", "id": "BAACAgIAAxkBAAOPacu1qaZL-FLQaWMNmAbS1P6B-DUAApeFAALhnOhKF_fANiYvpAk6BA"},
+        {"name": "🎬 8. Ajal tuhfalari 2", "id": "BAACAgIAAxkBAAOJacu1AoUKWQUInEPM0DGXvSZhueUAAqmFAALhnOhKZfF9wiu0Drs6BA"},
+    ],
+    "ru": [
+        {"name": "🎬 1. Философский камень", "id": "BAACAgIAAxkBAAIDSWnOlb1_AAGAYgWnEGm3bGJfXjFeggACKAoAAjH_WUs4J1skcGE7GToE"},
+        {"name": "🎬 2. Тайная комната", "id": "BAACAgIAAxkBAAIDS2nOld1zIwQEOIo_XNaB20dS4yBKAAImCgACMf9ZS8YV5UtV-2QLOgQ"},
+        {"name": "🎬 3. Узник Азкабана", "id": "BAACAgIAAxkBAAIDTWnOlfGGh3F6yuTdkzg6YDll0LciAAInCgACMf9ZSxH4i6-D8wN7OgQ"},
+        {"name": "🎬 4. Кубок огня", "id": "BAACAgIAAxkBAAIDT2nOlgJFMBSJSqBULhYTkSS0dmsdAAIjCgACMf9ZS1Zt8gABJXZpWDoE"},
+        {"name": "🎬 5. Орден Феникса", "id": "BAACAgQAAxkBAAIDUWnOlhMJxYJ_yWbXZLJ25ZPTS0JJAAKgDAAC2L_JULzvFz_NQdPnOgQ"},
+        {"name": "🎬 6. Принц-полукровка", "id": "BAACAgIAAxkBAAIDU2nOliUy9hL1ssJ5e-kORyqEL5DgAAIlCgACMf9ZS2Yi3TnE3abiOgQ"},
+        {"name": "🎬 7. Дары Смерти 1", "id": "BAACAgIAAxkBAAIDVWnOljREOEjf4v0o0Sz2DHs1Zm3xAALpBAACKP2pSAiPJCewUqfUOgQ"},
+        {"name": "🎬 8. Дары Смерти 2", "id": "BAACAgIAAxkBAAIDV2nOlkSVUkDW2WL6f4WrUmapIQABcQACZQQAAsSsoUjP9fxCTDgDNzoE"},
+    ],
+    "en": [
+        {"name": "🎬 1. Sorcerer's Stone", "id": "BAACAgQAAxkBAAIDWWnOltDBBkgHlm6EC5zZ1__vemdSAAJ_BwACrMaBUKRYUpDTm11oOgQ"},
+        {"name": "🎬 2. Chamber of Secrets", "id": "BAACAgQAAxkBAAIDW2nOlynvMgKOoF9hn7r8CcccUZo-AAKBBwACrMaBUM7959H4o01HOgQ"},
+        {"name": "🎬 3. Prisoner of Azkaban", "id": "BAACAgQAAxkBAAIDXWnOlz4dtzVGjgW6u9JUz1frSKKNAAKHBwACrMaBUKP9MbVImI-uOgQ"},
+        {"name": "🎬 4. Goblet of Fire", "id": "BAACAgQAAxkBAAIDX2nOl0-8b1wOF8VhdnLiVTmx2lQ0AAKOBwACrMaBUNmv6Ega62iuOgQ"},
+        {"name": "🎬 5. Order of the Phoenix", "id": "BAACAgQAAxkBAAIDYWnOl1-UJIPeUi9iwkH5xveOb1cBAAKVBwACrMaBUC7iNQH-PQokOgQ"},
+        {"name": "🎬 6. Half-Blood Prince", "id": "BAACAgQAAxkBAAIDY2nOl28ipXgwucm7uiCsJ00NrHObAAKNCAACqwKBUHgSmGHyOYgROgQ"},
+        {"name": "🎬 7. Deathly Hallows 1", "id": "BAACAgQAAxkBAAIDZWnOl36nQLjV7TlugAMlJE6y1xFKAAKXCAACqwKBUMiAIxlbsJmOOgQ"},
+        {"name": "🎬 8. Deathly Hallows 2", "id": "BAACAgQAAxkBAAIDZ2nOl41aUWcgKRzzP_r-suInRRSKAAKkCAACqwKBUC733-s2FjB3OgQ"},
+    ]
+}
 
-BOOKS_EN = [
-    {"name": "📖 1. Philosopher's Stone", "file_id": "BQACAgUAAxkBAAIDOWnOk3dbX8E-yaAVFy_xfeP6IqKGAAL_AwACn_N4VR4lpjl-n1tZOgQ", "caption": "📖 Name: Harry Potter and the Philosopher's Stone\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "📖 2. Chamber of Secrets", "file_id": "BQACAgUAAxkBAAIDO2nOk9iTjQ_vULXaRoo7BPiFoyESAAMEAAKf83hV774CCp3aF146BA", "caption": "📖 Name: Harry Potter and the Chamber of Secrets\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "📖 3. Prisoner of Azkaban", "file_id": "BQACAgUAAxkBAAIDPWnOk_jB-bYD-xsrsq6Y1xveD1mBAAL-AwACn_N4Vd-iiVWRVt-DOgQ", "caption": "📖 Name: Harry Potter and the Prisoner of Azkaban\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "📖 4. Goblet of Fire", "file_id": "BQACAgUAAxkBAAIDP2nOlAzIskBV4m7d6OgD3G1o2FOEAAL7AwACn_N4VdM2NXmcWgR-OgQ", "caption": "📖 Name: Harry Potter and the Goblet of Fire\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "📖 5. Order of the Phoenix", "file_id": "BQACAgUAAxkBAAIDQWnOlB5zRwpHT1wOS9diXcxjCcogAAL5AwACn_N4VQGCfrTny6GKOgQ", "caption": "📖 Name: Harry Potter and the Order of the Phoenix\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "📖 6. Half-Blood Prince", "file_id": "BQACAgUAAxkBAAIDQ2nOlDGDPZqe9r1QZbUUJDj4-L0UAAL6AwACn_N4VWeuyWoTm2SnOgQ", "caption": "📖 Name: Harry Potter and the Half-Blood Prince\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "📖 7. Deathly Hallows", "file_id": "BQACAgUAAxkBAAIDRWnOlEOi6oyRRafs-Y9Yl1Lo19fjAAL8AwACn_N4VdOVKXxjV5MlOgQ", "caption": "📖 Name: Harry Potter and the Deathly Hallows\n\nChannel: @harry_potter_fans_uz"},
-]
-
-BOOKS_ALL = [{"name": "📚 All Books (1-7)", "file_id": "BQACAgIAAxkBAAIDR2nOlaH2TdI0xcdn3sg8xJkeqLBIAAI0HwACIynpS2_wVwpElnx4OgQ", "caption": "📚 Harry Potter All Books (1-7)\n\nChannel: @harry_potter_fans_uz"}]
-
-MOVIES_UZ = [
-    {"name": "🎬 1. Hikmatlar toshi", "file_id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA", "caption": "1. 🎬 Nomi: HP 1: Hikmatlar toshi\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:32:22\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "🎬 2. Maxfiy hujra", "file_id": "BAACAgIAAxkBAAOFacu0BPXsr3WF3yYGmJHdjVeDjSMAAmSFAALhnOhKpL77RQyPlaE6BA", "caption": "2. 🎬 Nomi: HP 2: Maxfiy hujra\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:54:25\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "🎬 3. Azkoban maxbusi", "file_id": "BAACAgIAAxkBAAOHacu0W-SHgaTmaKyMu7N7S4D-9NQAAn6FAALhnOhKpYQqLyzBd-k6BA", "caption": "3. 🎬 Nomi: HP 3: Azkoban maxbusi\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:21:43\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "🎬 4. Alanga kubogi", "file_id": "BAACAgIAAxkBAAOJacu1AoUKWQUInEPM0DGXvSZhueUAAqmFAALhnOhKZfF9wiu0Drs6BA", "caption": "4. 🎬 Nomi: HP 4: Alanga kubogi\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:31:27\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "🎬 5. Feniks jamiyati", "file_id": "BAACAgIAAxkBAAOHacu0W-SHgaTmaKyMu7N7S4D-9NQAAn6FAALhnOhKpYQqLyzBd-k6BA", "caption": "5. 🎬 Nomi: HP 5: Feniks jamiyati\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:18:15\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "🎬 6. Tilsim Shahzoda", "file_id": "BAACAgIAAxkBAAONacu1kktAejSVYq9GM3xmHXGzrfAAAoyFAALhnOhKrgZBW8bL1Ws6BA", "caption": "6. 🎬 Nomi: HP 6: Tilsim Shahzoda\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:33:32\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "🎬 7. Ajal tuhfasi 1", "file_id": "BAACAgIAAxkBAAOPacu1qaZL-FLQaWMNmAbS1P6B-DUAApeFAALhnOhKF_fANiYvpAk6BA", "caption": "7. 🎬 Nomi: HP 7: Ajal tuhfasi 1-qism\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:26:06\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "🎬 8. Ajal tuhfalari 2", "file_id": "BAACAgIAAxkBAAOJacu1AoUKWQUInEPM0DGXvSZhueUAAqmFAALhnOhKZfF9wiu0Drs6BA", "caption": "8. 🎬 Nomi: HP 8: Ajal tuhfalari 2-qism\n\n🌎 Davlati: Buyuk Britaniya\n💽 Formati: 720p HD\n🇺🇿 Tili: Oʻzbek tili\n⌚️ Davomiyligi: 2:10:28\n\nKanal: @harry_potter_fans_uz"},
-]
-
-MOVIES_RU = [
-    {"name": "🎬 1. Философский камень", "file_id": "BAACAgIAAxkBAAIDSWnOlb1_AAGAYgWnEGm3bGJfXjFeggACKAoAAjH_WUs4J1skcGE7GToE", "caption": "1. 🎬 Название: ГП 1: Философский камень\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:32:00\n\nКанал: @harry_potter_fans_uz"},
-    {"name": "🎬 2. Тайная комната", "file_id": "BAACAgIAAxkBAAIDS2nOld1zIwQEOIo_XNaB20dS4yBKAAImCgACMf9ZS8YV5UtV-2QLOgQ", "caption": "2. 🎬 Название: ГП 2: Тайная комната\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:41:00\n\nКанал: @harry_potter_fans_uz"},
-    {"name": "🎬 3. Узник Азкабана", "file_id": "BAACAgIAAxkBAAIDTWnOlfGGh3F6yuTdkzg6YDll0LciAAInCgACMf9ZSxH4i6-D8wN7OgQ", "caption": "3. 🎬 Название: ГП 3: Узник Азкабана\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:22:00\n\nКанал: @harry_potter_fans_uz"},
-    {"name": "🎬 4. Кубок огня", "file_id": "BAACAgIAAxkBAAIDT2nOlgJFMBSJSqBULhYTkSS0dmsdAAIjCgACMf9ZS1Zt8gABJXZpWDoE", "caption": "4. 🎬 Название: ГП 4: Кубок огня\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:37:00\n\nКанал: @harry_potter_fans_uz"},
-    {"name": "🎬 5. Финикс ордени", "file_id": "BAACAgQAAxkBAAIDUWnOlhMJxYJ_yWbXZLJ25ZPTS0JJAAKgDAAC2L_JULzvFz_NQdPnOgQ", "caption": "5. 🎬 Название: ГП 5: Орден Феникса\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:18:00\n\nКанал: @harry_potter_fans_uz"},
-    {"name": "🎬 6. Принц-полукровка", "file_id": "BAACAgIAAxkBAAIDU2nOliUy9hL1ssJ5e-kORyqEL5DgAAIlCgACMf9ZS2Yi3TnE3abiOgQ", "caption": "6. 🎬 Название: ГП 6: Принц-полукровка\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:33:00\n\nКанал: @harry_potter_fans_uz"},
-    {"name": "🎬 7. Дары Смерти 1", "file_id": "BAACAgIAAxkBAAIDVWnOljREOEjf4v0o0Sz2DHs1Zm3xAALpBAACKP2pSAiPJCewUqfUOgQ", "caption": "7. 🎬 Название: ГП 7: Дары Смерти: Часть 1\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:26:00\n\nКанал: @harry_potter_fans_uz"},
-    {"name": "🎬 8. Дары Смерти 2", "file_id": "BAACAgIAAxkBAAIDV2nOlkSVUkDW2WL6f4WrUmapIQABcQACZQQAAsSsoUjP9fxCTDgDNzoE", "caption": "8. 🎬 Название: ГП 8: Дары Смерти: Часть 2\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:10:00\n\nКанал: @harry_potter_fans_uz"},
-]
-
-MOVIES_EN = [
-    {"name": "🎬 1. Sorcerer's Stone", "file_id": "BAACAgQAAxkBAAIDWWnOltDBBkgHlm6EC5zZ1__vemdSAAJ_BwACrMaBUKRYUpDTm11oOgQ", "caption": "1. 🎬 Name: HP 1: Sorcerer's Stone\n\n🌎 Country: United Kingdom\n💽 Format: 720p HD\n🇬🇧 Language: English\n⌚️ Duration: 2:32:21\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "🎬 2. Chamber of Secrets", "file_id": "BAACAgQAAxkBAAIDW2nOlynvMgKOoF9hn7r8CcccUZo-AAKBBwACrMaBUM7959H4o01HOgQ", "caption": "2. 🎬 Name: HP 2: Chamber of Secrets\n\n🌎 Country: United Kingdom\n💽 Format: 720p HD\n🇬🇧 Language: English\n⌚️ Duration: 2:40:55\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "🎬 3. Prisoner of Azkaban", "file_id": "BAACAgQAAxkBAAIDXWnOlz4dtzVGjgW6u9JUz1frSKKNAAKHBwACrMaBUKP9MbVImI-uOgQ", "caption": "3. 🎬 Name: HP 3: Prisoner of Azkaban\n\n🌎 Country: United Kingdom\n💽 Format: 720p HD\n🇬🇧 Language: English\n⌚️ Duration: 2:21:41\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "🎬 4. Goblet of Fire", "file_id": "BAACAgQAAxkBAAIDX2nOl0-8b1wOF8VhdnLiVTmx2lQ0AAKOBwACrMaBUNmv6Ega62iuOgQ", "caption": "4. 🎬 Name: HP 4: Goblet of Fire\n\n🌎 Country: United Kingdom\n💽 Format: 720p HD\n🇬🇧 Language: English\n⌚️ Duration: 2:37:05\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "🎬 5. Order of the Phoenix", "file_id": "BAACAgQAAxkBAAIDYWnOl1-UJIPeUi9iwkH5xveOb1cBAAKVBwACrMaBUC7iNQH-PQokOgQ", "caption": "5. 🎬 Name: HP 5: Order of the Phoenix\n\n🌎 Country: United Kingdom\n💽 Format: 720p HD\n🇬🇧 Language: English\n⌚️ Duration: 2:18:14\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "🎬 6. Half-Blood Prince", "file_id": "BAACAgQAAxkBAAIDY2nOl28ipXgwucm7uiCsJ00NrHObAAKNCAACqwKBUHgSmGHyOYgROgQ", "caption": "6. 🎬 Name: HP 6: Half-Blood Prince\n\n🌎 Country: United Kingdom\n💽 Format: 720p HD\n🇬🇧 Language: English\n⌚️ Duration: 2:33:30\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "🎬 7. Deathly Hallows 1", "file_id": "BAACAgQAAxkBAAIDZWnOl36nQLjV7TlugAMlJE6y1xFKAAKXCAACqwKBUMiAIxlbsJmOOgQ", "caption": "7. 🎬 Name: HP 7: Deathly Hallows Part 1\n\n🌎 Country: United Kingdom\n💽 Format: 720p HD\n🇬🇧 Language: English\n⌚️ Duration: 2:26:05\n\nChannel: @harry_potter_fans_uz"},
-    {"name": "🎬 8. Deathly Hallows 2", "file_id": "BAACAgQAAxkBAAIDZ2nOl41aUWcgKRzzP_r-suInRRSKAAKkCAACqwKBUC733-s2FjB3OgQ", "caption": "8. 🎬 Name: HP 8: Deathly Hallows Part 2\n\n🌎 Country: United Kingdom\n💽 Format: 720p HD\n🇬🇧 Language: English\n⌚️ Duration: 2:10:26\n\nChannel: @harry_potter_fans_uz"},
-]
-
-SORTING_MESSAGES = [
+# --- SHLYAPA FRAZALARI ---
+SORTING_PHRASES = [
     "🤔 *Hmmm... qiyin, juda qiyin.* \nKo'ryapman, bu yerda aql ham yetarli, iste'dod ham... va-a-ay, qanday ulkan xohish!",
     "🧐 *Iye, bu qanday sirli qalb?* \nAql bovar qilmaydigan jasorat, biroz makr... Ha, sen Hogvarts tarixini o'zgartira olasan!",
     "💭 *E-eh, men ko'ryapman...* \nSadoqat senda birinchi o'rinda. Mehnat qilishdan qo'rqmaysan, do'stlaring uchun joningni berishga tayyorsan.",
     "🐍 *Qiziq, juda qiziq...* \nShon-shuhratga bo'lgan chanqoqlik, aqlli munosabat. Ha, sen buyuklikka loyiqsan!",
     "🦁 *Bu yerda nima bor?* \nYuraging to'la qo'rqmaslik. Sen xavf-xatarga tik boqishni bilasan. Ha, jasurlik sening qoningda!"
 ]
+
+HOUSES = {
+    "Gryffindor": "🦁 Gryffindor!", "Slytherin": "🐍 Slytherin!", 
+    "Hufflepuff": "🦡 Hufflepuff!", "Ravenclaw": "🦅 Ravenclaw!"
+}
 
 # --- MENYULAR ---
 def main_menu():
@@ -117,93 +117,113 @@ def main_menu():
     markup.add(KeyboardButton("🎩 Saralovchi shlyapa"))
     return markup
 
-def book_lang_menu():
-    btn = InlineKeyboardMarkup(row_width=1)
-    btn.add(
-        InlineKeyboardButton("🇺🇿 O'zbek tili", callback_data="lang_book_uz"),
-        InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="lang_book_en"),
-        InlineKeyboardButton("📚 Hammasi birda", callback_data="lang_book_all"),
-        InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main")
-    )
+def lang_menu(mode):
+    btn = InlineKeyboardMarkup(row_width=2)
+    if mode == 'book':
+        btn.add(
+            InlineKeyboardButton("🇺🇿 O'zbek", callback_data="books_uz"),
+            InlineKeyboardButton("🇬🇧 English", callback_data="books_en"),
+            InlineKeyboardButton("📚 Hammasi birda", callback_data="books_all")
+        )
+    else:
+        btn.add(
+            InlineKeyboardButton("🇺🇿 O'zbek", callback_data="movies_uz"),
+            InlineKeyboardButton("🇷🇺 Ruscha", callback_data="movies_ru"),
+            InlineKeyboardButton("🇬🇧 English", callback_data="movies_en")
+        )
+    btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
     return btn
 
-def movie_lang_menu():
-    btn = InlineKeyboardMarkup(row_width=1)
-    btn.add(
-        InlineKeyboardButton("🇺🇿 O'zbek tili", callback_data="lang_movie_uz"),
-        InlineKeyboardButton("🇷🇺 Rus tili", callback_data="lang_movie_ru"),
-        InlineKeyboardButton("🇬🇧 Ingliz tili", callback_data="lang_movie_en"),
-        InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main")
-    )
-    return btn
-
-houses_dict = {"Slytherin": "ilon", "Hufflepuff": "aql", "Ravenclaw": "burgut", "Gryffindor": "jasorat"}
-ACTIVE_STATUSES = {"creator", "administrator", "member", "restricted"}
-
-async def check_sub(user_id):
-    try:
-        m_ch = await bot.get_chat_member(CHANNEL, user_id)
-        m_gr = await bot.get_chat_member(GROUP, user_id)
-        return m_ch.status in ACTIVE_STATUSES, m_gr.status in ACTIVE_STATUSES
-    except: return False, False
-
-# --- START ---
+# --- HANDLERLAR ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
-    if message.chat.type != 'private':
-        btn = InlineKeyboardMarkup().add(InlineKeyboardButton("💬 Shaxsiy chat", url=f"https://t.me/{BOT_USERNAME}"))
-        return await message.reply(f"Salom {message.from_user.first_name}! Bot bilan shaxsiy chatda gaplashing.", reply_markup=btn)
+    user_id = message.from_user.id
+    name = message.from_user.first_name
+    mention = f"<a href='tg://user?id={user_id}'>{name}</a>"
     
-    register_user(message.from_user.id)
-    in_ch, in_gr = await check_sub(message.from_user.id)
-    user_mention = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
-    
-    if not in_ch or not in_gr:
-        btn = InlineKeyboardMarkup(row_width=1)
-        btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
-        btn.add(InlineKeyboardButton("👥 Guruhga qo'shilish", url=f"https://t.me/{GROUP[1:]}"))
-        btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
-        await message.answer(f"Salom {user_mention}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn, parse_mode="HTML")
-        return
-    await message.answer(f"Xush kelibsiz {user_mention}! ✨", reply_markup=main_menu(), parse_mode="HTML")
+    await message.answer(
+        f"Xush kelibsiz {mention}!\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:",
+        reply_markup=main_menu(), parse_mode="HTML"
+    )
 
-# --- WELCOME SETTINGS (TUZATILGAN QISM) ---
+@dp.message_handler(lambda m: m.text == "📚 Kitoblar")
+async def book_start(message: types.Message):
+    await message.answer("Kitob tili va turini tanlang:", reply_markup=lang_menu('book'))
+
+@dp.message_handler(lambda m: m.text == "🎬 Kinolar")
+async def movie_start(message: types.Message):
+    await message.answer("Kino tilini tanlang:", reply_markup=lang_menu('movie'))
+
+@dp.message_handler(lambda m: m.text == "🎩 Saralovchi shlyapa")
+async def sorting_hat(message: types.Message):
+    data = load_data(HOUSES_FILE)
+    uid = str(message.from_user.id)
+    phrase = random.choice(SORTING_PHRASES)
+    msg = await message.answer(phrase, parse_mode="Markdown")
+    await asyncio.sleep(2)
+    
+    if uid not in data:
+        data[uid] = random.choice(list(HOUSES.keys()))
+        save_data(HOUSES_FILE, data)
+    
+    btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapa yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
+    await msg.edit_text(f"{phrase}\n\n✨ Fakultetingiz: **{HOUSES[data[uid]]}**", reply_markup=btn, parse_mode="Markdown")
+
+# --- CALLBACKS ---
+@dp.callback_query_handler(lambda c: True)
+async def callback_handler(c: types.CallbackQuery):
+    if c.data == "back_to_main":
+        await c.message.delete()
+    elif c.data.startswith("books_"):
+        lang = c.data.split("_")[1]
+        btn = InlineKeyboardMarkup(row_width=1)
+        for i, item in enumerate(BOOKS[lang]):
+            btn.add(InlineKeyboardButton(item["name"], callback_data=f"send_b_{lang}_{i}"))
+        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
+        await c.message.edit_text(f"📖 Tanlang ({lang}):", reply_markup=btn)
+    elif c.data.startswith("movies_"):
+        lang = c.data.split("_")[1]
+        btn = InlineKeyboardMarkup(row_width=1)
+        for i, item in enumerate(MOVIES[lang]):
+            btn.add(InlineKeyboardButton(item["name"], callback_data=f"send_m_{lang}_{i}"))
+        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
+        await c.message.edit_text(f"🎬 Tanlang ({lang}):", reply_markup=btn)
+    elif c.data.startswith("send_"):
+        _, type_char, lang, idx = c.data.split("_")
+        idx = int(idx)
+        try:
+            if type_char == 'b':
+                item = BOOKS[lang][idx]
+                await bot.send_document(c.message.chat.id, item["id"], caption=f"{item['name']}\n@harry_potter_fans_uz")
+            else:
+                item = MOVIES[lang][idx]
+                await bot.send_video(c.message.chat.id, item["id"], caption=f"{item['name']}\n@harry_potter_fans_uz")
+        except:
+            await c.answer("Faylni yuborishda xato!", show_alert=True)
+    await c.answer()
+
+# --- ADMIN: SET WELCOME (TUZATILGAN) ---
 @dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
 async def set_welcome_init(message: types.Message):
-    await message.answer("Xabarni yuboring (Rasm, Video yoki Matn).\n\nKeyingi yuboradigan narsangiz saqlanadi.")
-    # Bu yerda biz keyingi xabarni ushlaymiz
+    await message.answer("Yangi a'zolar uchun xabar (rasm, video yoki matn) yuboring:")
     dp.register_message_handler(save_welcome_final, user_id=ADMIN_ID, content_types=types.ContentTypes.ANY)
 
 async def save_welcome_final(message: types.Message):
-    # Buyruqlarni o'tkazib yuboramiz
     if message.text and message.text.startswith("/"): return
-
     chat_id = str(message.chat.id)
     text = message.caption if message.caption else message.text
     if not text: text = "Xush kelibsiz, {name}!"
     
-    file_id = "None"
-    file_type = "text"
-    
-    if message.photo:
-        file_id = message.photo[-1].file_id
-        file_type = "photo"
-    elif message.video:
-        file_id = message.video.file_id
-        file_type = "video"
-    elif message.animation:
-        file_id = message.animation.file_id
-        file_type = "animation"
+    f_id, f_type = "None", "text"
+    if message.photo: f_id, f_type = message.photo[-1].file_id, "photo"
+    elif message.video: f_id, f_type = message.video.file_id, "video"
+    elif message.animation: f_id, f_type = message.animation.file_id, "animation"
 
-    try:
-        data = load_data(WELCOME_FILE)
-        data[chat_id] = {"text": text, "file_id": file_id, "file_type": file_type}
-        save_data(WELCOME_FILE, data)
-        # Handlerdan o'chiramiz
-        dp.message_handlers.unregister(save_welcome_final)
-        await message.reply(f"✅ Saqlandi! Turi: {file_type}")
-    except Exception as e:
-        await message.reply(f"Xatolik: {e}")
+    data = load_data(WELCOME_FILE)
+    data[chat_id] = {"text": text, "file_id": f_id, "file_type": f_type}
+    save_data(WELCOME_FILE, data)
+    dp.message_handlers.unregister(save_welcome_final)
+    await message.reply(f"✅ Saqlandi! Turi: {f_type}")
 
 # --- KUTIB OLISH ---
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
@@ -215,89 +235,14 @@ async def on_new_member(message: types.Message):
         user = message.new_chat_members[0]
         mention = f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
         cap = conf['text'].replace("{name}", mention)
-        
-        btn = InlineKeyboardMarkup().add(
-            InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"),
-            InlineKeyboardButton("🎩 Fakultet", url=f"https://t.me/{BOT_USERNAME}?start=start")
-        )
+        btn = InlineKeyboardMarkup().add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
         
         try:
-            if conf['file_type'] == "photo":
-                await bot.send_photo(chat_id, conf['file_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
-            elif conf['file_type'] == "video":
-                await bot.send_video(chat_id, conf['file_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
-            elif conf['file_type'] == "animation":
-                await bot.send_animation(chat_id, conf['file_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
-            else:
-                await bot.send_message(chat_id, cap, reply_markup=btn, parse_mode="HTML")
+            if conf['file_type'] == "photo": await bot.send_photo(chat_id, conf['file_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
+            elif conf['file_type'] == "video": await bot.send_video(chat_id, conf['file_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
+            elif conf['file_type'] == "animation": await bot.send_animation(chat_id, conf['file_id'], caption=cap, reply_markup=btn, parse_mode="HTML")
+            else: await bot.send_message(chat_id, cap, reply_markup=btn, parse_mode="HTML")
         except: pass
 
-# --- CALLBACKS ---
-@dp.callback_query_handler(lambda c: True)
-async def handle_callbacks(callback: types.CallbackQuery):
-    uid = callback.message.chat.id
-    if callback.data == "check_sub_status":
-        in_ch, in_gr = await check_sub(callback.from_user.id)
-        if in_ch and in_gr:
-            await callback.message.delete()
-            await bot.send_message(uid, "Xush kelibsiz! ✨", reply_markup=main_menu())
-        else: await callback.answer("Obuna bo'lmagansiz!", show_alert=True)
-    elif callback.data == "back_to_main":
-        await callback.message.delete()
-        await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
-    # ... qolgan callbacklar (bk_uz, mv_uz va hk) o'zgarishsiz qoladi ...
-    elif callback.data == "lang_book_uz":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, b in enumerate(BOOKS_UZ): btn.add(InlineKeyboardButton(b["name"], callback_data=f"bk_uz_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🇺🇿 Kitoblar:", reply_markup=btn)
-    elif callback.data == "lang_movie_uz":
-        btn = InlineKeyboardMarkup(row_width=1)
-        for i, m in enumerate(MOVIES_UZ): btn.add(InlineKeyboardButton(m["name"], callback_data=f"mv_uz_{i}"))
-        btn.add(InlineKeyboardButton("⬅️ Orqaga", callback_data="back_to_main"))
-        await callback.message.edit_text("🎬 Kinolar:", reply_markup=btn)
-    # ... (Boshqa callbacklar shunday davom etadi)
-    await callback.answer()
-
-# --- ADMIN COMMANDS ---
-@dp.message_handler(commands=["mute", "ban", "unmute"])
-async def mod_tools(message: types.Message):
-    if message.chat.type == 'private': return
-    adm = await message.chat.get_member(message.from_user.id)
-    if not adm.is_chat_admin(): return
-    if not message.reply_to_message: return await message.reply("Reply qiling!")
-    
-    target = message.reply_to_message.from_user.id
-    cmd = message.get_command()
-    
-    try:
-        if "mute" in cmd:
-            await message.chat.restrict(target, permissions=types.ChatPermissions(can_send_messages=False))
-            await message.answer("🙊 Mute qilindi.")
-        elif "unmute" in cmd:
-            await message.chat.restrict(target, permissions=types.ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_other_messages=True, can_add_web_page_previews=True))
-            await message.answer("🔊 Mutedan olindi.")
-        elif "ban" in cmd:
-            await message.chat.kick(target)
-            await message.answer("🚫 Haydaldi.")
-    except Exception as e: await message.reply(f"Xato: {e}")
-
-# --- KITOB/KINO HANDLERLARI ---
-@dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
-async def nav_handler(message: types.Message):
-    if message.chat.type != 'private': return
-    if message.text == "📚 Kitoblar": await message.answer("Tilni tanlang:", reply_markup=book_lang_menu())
-    elif message.text == "🎬 Kinolar": await message.answer("Tilni tanlang:", reply_markup=movie_lang_menu())
-    elif message.text == "🎩 Saralovchi shlyapa":
-        # ... (Tepada yozilgan shlyapa kodi) ...
-        data = load_data(HOUSES_FILE)
-        uid = str(message.from_user.id)
-        if uid not in data:
-            f = random.choice(list(houses_dict.keys())); data[uid] = f; save_data(HOUSES_FILE, data)
-        f = data[uid]
-        house_emojis = {"Slytherin": "🐍", "Hufflepuff": "🦡", "Ravenclaw": "🦅", "Gryffindor": "🦁"}
-        await message.answer(f"Sizning fakultetingiz: {house_emojis[f]} {f}")
-
-# --- START POLLING ---
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
