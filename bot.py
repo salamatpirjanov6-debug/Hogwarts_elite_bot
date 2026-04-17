@@ -133,7 +133,7 @@ def main_menu():
     markup.add(KeyboardButton("🎩 Saralovchi shlyapa"))
     return markup
 
-# --- JAZO HANDLER (MUTE, BAN, UNMUTE, KICK) ---
+# --- JAZO HANDLER ---
 @dp.message_handler(commands=["mute", "ban", "unmute", "kick"])
 async def admin_actions(message: types.Message):
     if message.chat.type == 'private': return
@@ -142,39 +142,39 @@ async def admin_actions(message: types.Message):
     if not admin_member.is_chat_admin(): return
 
     if not message.reply_to_message:
-        return await message.reply("⚠️ Bu buyruqni ishlatish uchun biror xabarga reply qiling!")
+        return await message.reply("⚠️ Reply qiling!")
 
     target = message.reply_to_message.from_user
     bot_obj = await bot.get_me()
 
-    # Adminlarni yoki Botni jazolashni oldini olish
     target_member = await message.chat.get_member(target.id)
     if target_member.is_chat_admin() or target.id == bot_obj.id:
-        return await message.reply("🧙‍♂️ Kechirasiz, lekin o'zingizni yoki boshqa bir sehrgar adminni jazolash taqiqlangan! Bu Hogwarts qonunlariga zid.")
+        return await message.reply("🧙‍♂️ Adminni jazolash taqiqlangan!")
 
     cmd = message.get_command()
     mention = get_mention(target)
+    args = message.get_args().split()
 
     try:
         if cmd == "/mute":
-            args = message.get_args().split()
-            m_time = int(args[0]) if args and args[0].isdigit() else 15
+            m_time = int(args[0]) if args and args[0].isdigit() else 1
+            reason = " ".join(args[1:]) if len(args) > 1 else "Sabab ko'rsatilmadi"
             await message.chat.restrict(target.id, permissions=types.ChatPermissions(can_send_messages=False), until_date=int(time.time())+(m_time*60))
-            txt = f"🙊 {mention} <b>{m_time}</b> daqiqaga mute qilindi."
+            txt = f"🙊 {mention} <b>{m_time}</b> daqiqaga mute qilindi.\n📝 Sabab: {reason}"
         elif cmd == "/ban":
             await message.chat.kick(target.id)
-            txt = f"🚫 {mention} guruhdan haydaldi va banlandi."
+            txt = f"🚫 {mention} banlandi."
         elif cmd == "/unmute":
             await message.chat.restrict(target.id, permissions=types.ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_other_messages=True, can_add_web_page_previews=True))
-            txt = f"🔊 {mention} mutedan ozod qilindi."
+            txt = f"🔊 {mention} mutedan olindi."
         elif cmd == "/kick":
             await message.chat.unban(target.id)
-            txt = f"👢 {mention} guruhdan chiqarib yuborildi."
+            txt = f"👢 {mention} chiqarib yuborildi."
 
         msg = await message.answer(txt, parse_mode="HTML")
         asyncio.create_task(delete_after_delay(msg))
     except Exception as e:
-        await message.reply(f"❌ Xatolik yuz berdi: {str(e)}")
+        await message.reply(f"❌ Xatolik: {str(e)}")
 
 # --- START ---
 @dp.message_handler(commands=["start"])
@@ -188,7 +188,7 @@ async def start_cmd(message: types.Message):
             InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"),
             InlineKeyboardButton("✅ Tekshirish", callback_data="recheck_sub")
         )
-        return await message.answer(f"Salom {mention}!\n\nBotdan foydalanish uchun kanalimiz va guruhimizga a'zo bo'ling.", reply_markup=btn, parse_mode="HTML")
+        return await message.answer(f"Salom {mention}!\n\nBotdan foydalanish uchun kanal va guruhga a'zo bo'ling.", reply_markup=btn, parse_mode="HTML")
     
     start_txt = f"Salom {mention}!\n\nHogwarts olamiga kirishga tayyormisiz? ✨\n\nMarhamat, menyulardan birini tanlang 👇"
     await message.answer(start_txt, reply_markup=main_menu(), parse_mode="HTML")
@@ -214,11 +214,17 @@ async def sorting_hat(message: types.Message):
     msg = await message.answer("🧐 *O'ylayapman...*")
     await asyncio.sleep(2)
     
-    final_text = f"{h['txt']}\n\n✨ *Hamma narsa ayon!* ✨\n\nFakultetingiz: {h['emoji']} <b>{data[uid]}</b>\n🔑 Kalit so'z: <code>{h['kalit']}</code>"
+    final_text = (
+        f"{h['txt']}\n\n"
+        f"✨ *Hamma narsa ayon!* ✨\n\n"
+        f"Fakultetingiz: {h['emoji']} <b>{data[uid]}</b>\n"
+        f"🔑 Kalit so'z: <code>{h['kalit']}</code>\n\n"
+        f"Kalit so'zni shlyapaga yuboring 👇"
+    )
     btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga borish", url=f"https://t.me/{SHLYAPA_USER}"))
     await msg.edit_text(final_text, reply_markup=btn, parse_mode="HTML")
 
-# --- MEDIA MENYU (KITOB/KINO) ---
+# --- MEDIA MENYU ---
 @dp.message_handler(lambda m: m.text == "📚 Kitoblar")
 async def book_lang(message: types.Message):
     btn = InlineKeyboardMarkup(row_width=2).add(
@@ -287,7 +293,7 @@ async def welcome_save(message: types.Message):
     data[str(message.chat.id)] = {"text": message.caption or message.text or "Xush kelibsiz {name}!", "f_id": f_id, "f_type": f_type}
     save_data(WELCOME_FILE, data)
     dp.message_handlers.unregister(welcome_save)
-    await message.reply("✅ Kutib olish sozlamalari saqlandi!")
+    await message.reply("✅ Saqlandi!")
 
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
 async def on_new_member(message: types.Message):
@@ -308,7 +314,7 @@ async def on_new_member(message: types.Message):
 # --- GETID ADMIN ---
 @dp.message_handler(commands=["getid"], user_id=ADMIN_ID)
 async def get_id_start(message: types.Message):
-    await message.reply("Fayl (rasm, video, hujjat) yuboring, ID sini beraman:")
+    await message.reply("Faylni yuboring:")
     await AdminStates.waiting_for_file.set()
 
 @dp.message_handler(state=AdminStates.waiting_for_file, content_types=types.ContentTypes.ANY)
