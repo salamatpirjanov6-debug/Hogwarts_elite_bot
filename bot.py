@@ -210,7 +210,7 @@ async def set_forced_channel(message: types.Message):
     save_data(FORCED_CHANNELS_FILE, data)
     await message.reply(f"✅ Ushbu guruh uchun majburiy kanal {args} qilib belgilandi.")
 
-# --- START BUYRUG'I (Kanal va Guruh obunasi bilan) ---
+# --- START BUYRUG'I (Tahrirlangan) ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     if message.chat.type != 'private':
@@ -220,16 +220,20 @@ async def start_cmd(message: types.Message):
     register_user(message.from_user.id)
     in_ch, in_gr = await check_sub(message.from_user.id)
     
+    # Ismni profilga havola qilib yasash
+    user_mention = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
+    
     if not in_ch or not in_gr:
         btn = InlineKeyboardMarkup(row_width=1)
+        # Obuna bo'lish tugmalari: Kanal va Guruh
         if not in_ch: btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
         if not in_gr: btn.add(InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"))
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
-        await message.answer(f"Salom {message.from_user.first_name}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn)
+        
+        await message.answer(f"Salom {user_mention}! ❗ Botdan foydalanish uchun obuna bo'ling:", reply_markup=btn, parse_mode="HTML")
         return
         
-    user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
-    await message.answer(f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
+    await message.answer(f"Xush kelibsiz {user_mention}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
 
 # --- ASOSIY HANDLERLAR ---
 @dp.message_handler(lambda m: m.text in ["📚 Kitoblar", "🎬 Kinolar", "🎩 Saralovchi shlyapa"])
@@ -251,10 +255,10 @@ async def private_menus(message: types.Message):
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
-# --- FILE ID OLUVCHI (Faqat shaxsiyda va Admin uchun) ---
+# --- FILE ID OLUVCHI ---
 @dp.message_handler(content_types=['document', 'video', 'photo', 'audio'], user_id=ADMIN_ID)
 async def get_file_id_handler(message: types.Message):
-    if message.chat.type != 'private': return # Guruhda javob bermaydi
+    if message.chat.type != 'private': return 
     
     file_id = ""
     if message.document: file_id = message.document.file_id
@@ -391,9 +395,10 @@ async def check_group_sub(message: types.Message):
             check = await bot.get_chat_member(target_channel, message.from_user.id)
             if check.status not in ACTIVE_STATUSES:
                 await message.delete()
-                user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
+                # Ismni profilga havola qilib yasash
+                user_mention = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
                 btn = InlineKeyboardMarkup().add(InlineKeyboardButton("📢 Kanalga obuna bo'lish", url=f"https://t.me/{target_channel[1:]}"))
-                await message.answer(f"⚠️ {user_link}, xabar yuborish uchun kanalga a'zo bo'ling!", reply_markup=btn, parse_mode="HTML")
+                await message.answer(f"⚠️ {user_mention}, xabar yuborish uchun kanalga a'zo bo'ling!", reply_markup=btn, parse_mode="HTML")
         except Exception as e:
             logging.error(f"Error checking sub: {e}")
 
