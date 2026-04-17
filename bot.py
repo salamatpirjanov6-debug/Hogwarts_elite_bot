@@ -49,7 +49,7 @@ def register_user(user_id):
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE", "caption": "📖 Nomi: Garri Potter va Falsafiy tosh\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE", "caption": "📖 Nomi: Garri Potter va Maxfiy hujra\n\nKanal: @harry_potter_fans_uz"},
-    {"name": "📖 3. Azkaban maxbusi", "file_id": "BQACAgIAAxkDAAIGrWnQ7uuJrmBjx6dr0TOd7v-EHMZqAAIJBwACX2XYSLt7I8J8igq0OwQ", "caption": "📖 Nomi: Garri Potter va Azkaban mahbusi\n\nKanal: @harry_potter_fans_uz"},
+    {"name": "📖 3. Azkaban maxbusi", "file_id": "BAACAgIAAxkBAAIIAmnh33byd1kbNFiGMlN7rO4P-drIAAJHhQAC4ZzoShs24A6MhRIQOwQ", "caption": "📖 Nomi: Garri Potter va Azkaban mahbusi\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 4. Otashli jom", "file_id": "BQACAgIAAxkBAANnacuwaXcFuxDS8ll0QQ8YYgjxNxcAAjMAAwSsEEoCrCr_9txjwDoE", "caption": "📖 Nomi: Garri Potter va Otashli jom\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 5. Kaknus ordeni", "file_id": "BQACAgIAAxkBAANpacuwkFa_xAhxOPRwz6_O5mhZzkMAAmsAA-A7GEoe0fZOrviJXjoE", "caption": "📖 Nomi: Garri Potter va Kaknus ordeni\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 6. Chalazot shaxzoda", "file_id": "BQACAgIAAxkBAANracuwqVy7l3UaOeEsHvDN8DYyYK4AApIAAzXcUEotF3tao-vWxToE", "caption": "📖 Nomi: Garri Potter va Chalazot shahzoda\n\nKanal: @harry_potter_fans_uz"},
@@ -249,53 +249,6 @@ async def private_menus(message: types.Message):
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
 
-# --- FILE ID OLUVCHI (FAQAT ADMIN UCHUN) ---
-@dp.message_handler(content_types=['document', 'video', 'photo', 'audio'], user_id=ADMIN_ID)
-async def get_file_id_handler(message: types.Message):
-    file_id = ""
-    if message.document:
-        file_id = message.document.file_id
-    elif message.video:
-        file_id = message.video.file_id
-    elif message.photo:
-        file_id = message.photo[-1].file_id
-    elif message.audio:
-        file_id = message.audio.file_id
-    
-    if file_id:
-        await message.reply(f"<code>{file_id}</code>", parse_mode="HTML")
-
-# --- YANGI A'ZONI KUTIB OLISH (WELCOME HANDLER) ---
-@dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
-async def welcome_new_member(message: types.Message):
-    settings = load_data(WELCOME_FILE)
-    chat_id = str(message.chat.id)
-    if chat_id in settings:
-        welcome = settings[chat_id]
-        text = welcome['text']
-        user_link = f"<a href='tg://user?id={message.new_chat_members[0].id}'>{message.new_chat_members[0].first_name}</a>"
-        caption = text.replace("{name}", user_link)
-        f_id = welcome['file_id']
-        f_type = welcome['file_type']
-        
-        btn = InlineKeyboardMarkup(row_width=1)
-        btn.add(
-            InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{BOT_USERNAME}?start=shlyapa"),
-            InlineKeyboardButton("📢 Kanalimiz", url=f"https://t.me/{CHANNEL[1:]}")
-        )
-        
-        try:
-            if f_type == "photo":
-                await bot.send_photo(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            elif f_type == "video":
-                await bot.send_video(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            elif f_type == "animation":
-                await bot.send_animation(message.chat.id, f_id, caption=caption, reply_markup=btn, parse_mode="HTML")
-            else:
-                await bot.send_message(message.chat.id, caption, reply_markup=btn, parse_mode="HTML")
-        except Exception as e:
-            logging.error(f"Welcome error: {e}")
-
 @dp.callback_query_handler(lambda c: True)
 async def callback_handler(callback: types.CallbackQuery):
     uid = callback.message.chat.id
@@ -346,55 +299,13 @@ async def callback_handler(callback: types.CallbackQuery):
         elif l == "en": await bot.send_video(uid, MOVIES_EN[idx]["file_id"], caption=MOVIES_EN[idx]["caption"])
     await callback.answer()
 
-# --- REKLAMA VA WELCOME ---
-@dp.message_handler(commands=["send"], user_id=ADMIN_ID)
-async def send_ads(message: types.Message):
-    text = message.get_args(); reply = message.reply_to_message
-    if not text and not reply: return
-    users = load_data(USERS_FILE); u_list = list(users.keys())
-    status_msg = await message.answer("🚀 Yuborilmoqda..."); count = 0
-    for uid in u_list:
-        try:
-            if reply: await reply.copy_to(int(uid))
-            else: await bot.send_message(int(uid), text)
-            count += 1
-            if count % 20 == 0: await asyncio.sleep(1)
-        except: continue
-    await status_msg.edit_text(f"✅ Yetkazildi: {count}")
-
-@dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
-async def set_welcome(message: types.Message):
-    await message.reply("Kutib olish xabari yuboring. {name} so'zi foydalanuvchi linki bo'ladi.")
-    dp.register_message_handler(save_welcome_step, user_id=ADMIN_ID, state=None, content_types=types.ContentTypes.ANY)
-
-async def save_welcome_step(message: types.Message):
-    text = message.caption if message.caption else message.text
-    if not text: return await message.reply("Xabar matni shart!")
-    f_id = "None"; f_type = "text"
-    if message.photo: f_id = message.photo[-1].file_id; f_type = "photo"
-    elif message.video: f_id = message.video.file_id; f_type = "video"
-    elif message.animation: f_id = message.animation.file_id; f_type = "animation"
-    settings = load_data(WELCOME_FILE); settings[str(message.chat.id)] = {"text": text, "file_id": f_id, "file_type": f_type}
-    save_data(WELCOME_FILE, settings); dp.message_handlers.unregister(save_welcome_step)
-    await message.reply("✅ Saqlandi.")
-
-# --- GURUHDAGI HABARLARNI TEKSHIRISH (MAJBURIY OBUNA) ---
-@dp.message_handler(lambda m: m.chat.type in ['group', 'supergroup'])
-async def check_group_sub(message: types.Message):
-    member = await message.chat.get_member(message.from_user.id)
-    if member.is_chat_admin() or message.from_user.is_bot: return
-    channels_data = load_data(FORCED_CHANNELS_FILE)
-    target_channel = channels_data.get(str(message.chat.id))
-    if target_channel:
-        try:
-            check = await bot.get_chat_member(target_channel, message.from_user.id)
-            if check.status not in ACTIVE_STATUSES:
-                await message.delete()
-                user_link = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
-                btn = InlineKeyboardMarkup().add(InlineKeyboardButton("📢 Kanalga obuna bo'lish", url=f"https://t.me/{target_channel[1:]}"))
-                await message.answer(f"⚠️ {user_link}, xabar yuborish uchun kanalga a'zo bo'ling!", reply_markup=btn, parse_mode="HTML")
-        except Exception as e:
-            logging.error(f"Error checking sub: {e}")
+# --- FILE ID OLISH (FAQAT SHAXSIY CHATDA VA FAQAT ADMIN UCHUN) ---
+@dp.message_handler(content_types=['video', 'document'])
+async def get_file_id(message: types.Message):
+    if message.chat.type == 'private' and message.from_user.id == ADMIN_ID:
+        fid = message.video.file_id if message.video else message.document.file_id
+        t = "Video" if message.video else "Hujjat"
+        await message.reply(f"✅ {t} file_id: <code>{fid}</code>", parse_mode="HTML")
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
