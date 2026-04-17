@@ -20,7 +20,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7718919427:AAH0p85L_XFsc-2n0L8O956T8Xw68Y9NqE")
 CHANNEL = "@harry_potter_fans_uz"
 GROUP = "@hogwarts_elite"
-ADMIN_ID = 7670992727
+ADMIN_ID = 7821230725
 SHLYAPA_USER = "elite_shlyapa"
 
 logging.basicConfig(level=logging.INFO)
