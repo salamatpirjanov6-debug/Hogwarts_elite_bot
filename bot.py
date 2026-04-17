@@ -45,7 +45,7 @@ def load_data(file):
 def save_data(file, data):
     with open(file, "w") as f: json.dump(data, f, indent=4)
 
-# --- MA'LUMOTLAR BAZASI (KITOBLAR) ---
+# --- MA'LUMOTLAR BAZASI (KITOBLAR VA KINOLAR TO'LIQ) ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE", "caption": "📖 Nomi: Garri Potter va Falsafiy tosh\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE", "caption": "📖 Nomi: Garri Potter va Maxfiy hujra\n\nKanal: @harry_potter_fans_uz"},
@@ -68,7 +68,6 @@ BOOKS_EN = [
     {"name": "📖 8. Deathly Hallows 2", "file_id": "BQACAgUAAxkBAAIDRWnOlEOi6oyRRafs-Y9Yl1Lo19fjAAL8AwACn_N4VdOVKXxjV5MlOgQ", "caption": "📖 Name: Harry Potter 8\n\nChannel: @harry_potter_fans_uz"},
 ]
 
-# --- MA'LUMOTLAR BAZASI (KINOLAR) ---
 MOVIES_UZ = [
     {"name": "🎬 1. Hikmatlar toshi", "file_id": "BAACAgIAAxkBAAN0acuyGAMCrWD9TTuMq55gFHUM8scAAr2OAAKIIOhKA6wazQylWz46BA", "caption": "🎬 HP 1: Hikmatlar toshi\n@harry_potter_fans_uz"},
     {"name": "🎬 2. Maxfiy hujra", "file_id": "BAACAgIAAxkBAAOFacu0BPXsr3WF3yYGmJHdjVeDjSMAAmSFAALhnOhKpL77RQyPlaE6BA", "caption": "🎬 HP 2: Maxfiy hujra\n@harry_potter_fans_uz"},
@@ -133,7 +132,7 @@ def main_menu():
     markup.add(KeyboardButton("🎩 Saralovchi shlyapa"))
     return markup
 
-# --- JAZO HANDLER ---
+# --- JAZO HANDLER (YANGILANGAN) ---
 @dp.message_handler(commands=["mute", "ban", "unmute", "kick"])
 async def admin_actions(message: types.Message):
     if message.chat.type == 'private': return
@@ -148,8 +147,10 @@ async def admin_actions(message: types.Message):
     bot_obj = await bot.get_me()
 
     target_member = await message.chat.get_member(target.id)
+    
+    # --- ADMINNI JAZOLASH TAQIQLANGAN ---
     if target_member.is_chat_admin() or target.id == bot_obj.id:
-        return await message.reply("🧙‍♂️ Adminni jazolash taqiqlangan!")
+        return await message.reply("🧙‍♂️ Kechirasiz, lekin o'zingizni yoki boshqa bir sehrgar adminni jazolash taqiqlangan! Bu Hogwarts qonunlariga zid.")
 
     cmd = message.get_command()
     mention = get_mention(target)
@@ -157,8 +158,14 @@ async def admin_actions(message: types.Message):
 
     try:
         if cmd == "/mute":
-            m_time = int(args[0]) if args and args[0].isdigit() else 1
-            reason = " ".join(args[1:]) if len(args) > 1 else "Sabab ko'rsatilmadi"
+            # Vaqt va sababni ajratish
+            if args and args[0].isdigit():
+                m_time = int(args[0])
+                reason = " ".join(args[1:]) if len(args) > 1 else "Sabab ko'rsatilmadi"
+            else:
+                m_time = 1
+                reason = " ".join(args) if args else "Sabab ko'rsatilmadi"
+                
             await message.chat.restrict(target.id, permissions=types.ChatPermissions(can_send_messages=False), until_date=int(time.time())+(m_time*60))
             txt = f"🙊 {mention} <b>{m_time}</b> daqiqaga mute qilindi.\n📝 Sabab: {reason}"
         elif cmd == "/ban":
@@ -179,8 +186,9 @@ async def admin_actions(message: types.Message):
 # --- START ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
-    in_ch, in_gr = await check_sub(message.from_user.id)
-    mention = get_mention(message.from_user)
+    user = message.from_user
+    in_ch, in_gr = await check_sub(user.id)
+    mention = get_mention(user)
     
     if not in_ch or not in_gr:
         btn = InlineKeyboardMarkup(row_width=1).add(
@@ -198,7 +206,8 @@ async def recheck_callback(callback: types.CallbackQuery):
     in_ch, in_gr = await check_sub(callback.from_user.id)
     if in_ch and in_gr:
         await callback.message.delete()
-        await start_cmd(callback.message)
+        # Tekshirishdan so'ng to'g'ri ism bilan start berish
+        await start_cmd(callback)
     else:
         await callback.answer("Hali ham obuna bo'lmadingiz! ❌", show_alert=True)
 
