@@ -30,6 +30,9 @@ USERS_FILE = "bot_users.json"
 WELCOME_FILE = "welcome_settings.json"
 FORCED_CHANNELS_FILE = "forced_channels.json"
 
+# Admin rejimini xotirada saqlash uchun
+admin_mode = {}
+
 def load_data(file):
     if os.path.exists(file):
         try:
@@ -46,7 +49,7 @@ def register_user(user_id):
         users[str(user_id)] = True
         save_data(USERS_FILE, users)
 
-# --- KITOOBLAR VA KINOLAR BAZASI ---
+# --- KITOOBLAR VA KINOLAR BAZASI (TO'LIQ) ---
 BOOKS_UZ = [
     {"name": "📖 1. Falsafiy tosh", "file_id": "BQACAgIAAxkBAANBacuvW5b3Swv7_h1BWKHAr9BSFDEAAnAAA0vfYUn_DvBFWXk9WToE", "caption": "📖 Nomi: Garri Potter va Falsafiy tosh\n\nKanal: @harry_potter_fans_uz"},
     {"name": "📖 2. Maxfiy xujra", "file_id": "BQACAgIAAxkBAANGacuv4uq6XXW9EVN4c1mrczrhf4AAAi4AAwSsEEpZs7eKKsu6szoE", "caption": "📖 Nomi: Garri Potter va Maxfiy hujra\n\nKanal: @harry_potter_fans_uz"},
@@ -84,7 +87,7 @@ MOVIES_RU = [
     {"name": "🎬 1. Философский камень", "file_id": "BAACAgIAAxkBAAIDSWnOlb1_AAGAYgWnEGm3bGJfXjFeggACKAoAAjH_WUs4J1skcGE7GToE", "caption": "1. 🎬 Название: ГП 1: Философский камень\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:32:00\n\nКанал: @harry_potter_fans_uz"},
     {"name": "🎬 2. Тайная комната", "file_id": "BAACAgIAAxkBAAIDS2nOld1zIwQEOIo_XNaB20dS4yBKAAImCgACMf9ZS8YV5UtV-2QLOgQ", "caption": "2. 🎬 Название: ГП 2: Тайная комната\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:41:00\n\nКанал: @harry_potter_fans_uz"},
     {"name": "🎬 3. Узник Азкабана", "file_id": "BAACAgIAAxkBAAIDTWnOlfGGh3F6yuTdkzg6YDll0LciAAInCgACMf9ZSxH4i6-D8wN7OgQ", "caption": "3. 🎬 Название: ГП 3: Узник Азкабана\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:22:00\n\nКанал: @harry_potter_fans_uz"},
-    {"name": "🎬 4. Кубок огня", "file_id": "BAACAgIAAxkBAAIDT2nOlgJFMBSJSqBULhYTkSS0dmsdAAIjCgACMf9ZS1Zt8gABJXZpWDoE", "caption": "4. 🎬 Название: ГП 4: Кубок огня\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:37:00\n\nКанал: @harry_potter_fans_uz"},
+    {"name": "🎬 4. Кубок огня", "file_id": "BAACAgIAAxkBAAIDT2nOlgJFMBSJSqBULhYTkSS0dmsdAAIjCgACMf9ZS1Zt8gABJXZpWDoE", "caption": "4. Название: ГП 4: Кубок огня\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:37:00\n\nКанал: @harry_potter_fans_uz"},
     {"name": "🎬 5. Финикс ордени", "file_id": "BAACAgQAAxkBAAIDUWnOlhMJxYJ_yWbXZLJ25ZPTS0JJAAKgDAAC2L_JULzvFz_NQdPnOgQ", "caption": "5. 🎬 Название: ГП 5: Орден Феникса\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:18:00\n\nКанал: @harry_potter_fans_uz"},
     {"name": "🎬 6. Принц-полукровка", "file_id": "BAACAgIAAxkBAAIDU2nOliUy9hL1ssJ5e-kORyqEL5DgAAIlCgACMf9ZS2Yi3TnE3abiOgQ", "caption": "6. 🎬 Название: ГП 6: Принц-полукровка\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:33:00\n\nКанал: @harry_potter_fans_uz"},
     {"name": "🎬 7. Дары Смерти 1", "file_id": "BAACAgIAAxkBAAIDVWnOljREOEjf4v0o0Sz2DHs1Zm3xAALpBAACKP2pSAiPJCewUqfUOgQ", "caption": "7. 🎬 Название: ГП 7: Дары Смерти: Часть 1\n\n🌎 Страна: Великобритания\n💽 Формат: 720p HD\n🇷🇺 Язык: Русский дубляж\n⌚️ Длительность: 2:26:00\n\nКанал: @harry_potter_fans_uz"},
@@ -200,6 +203,36 @@ async def ban_user(message: types.Message):
         await message.answer(f"🚫 <b>{message.reply_to_message.from_user.first_name}</b> haydaldi.\n📄 <b>Sabab:</b> {reason}", parse_mode="HTML")
     except Exception as e: await message.reply(f"Xatolik: {e}")
 
+# --- ADMIN PANEL & FILE ID YOQISH (YANGI QISIM) ---
+@dp.message_handler(commands=["admins"], user_id=ADMIN_ID)
+async def admin_panel_activate(message: types.Message):
+    if message.chat.type != 'private':
+        return await message.reply("⚠️ Ushbu buyruq faqat bot bilan shaxsiy chatda ishlaydi.")
+    
+    admin_mode[message.from_user.id] = True
+    await message.answer("🛠 <b>Admin rejimi yoqildi.</b>\n\nEndi menga rasm, video yoki fayl yuborsangiz, men sizga ularning <code>file_id</code> sini beraman.\n\nTo'xtatish uchun /cancel yozing.", parse_mode="HTML")
+
+@dp.message_handler(commands=["cancel"], user_id=ADMIN_ID)
+async def cancel_admin_panel(message: types.Message):
+    if message.from_user.id in admin_mode:
+        del admin_mode[message.from_user.id]
+        await message.reply("✅ Admin rejimi o'chirildi.")
+
+# --- FILE ID BERISH (FAQAT ADMIN REJIMIDA VA SHAXSIYDA) ---
+@dp.message_handler(content_types=['document', 'video', 'photo', 'audio', 'animation'], user_id=ADMIN_ID)
+async def get_file_id_handler(message: types.Message):
+    # Faqat admin rejim yoqilgan bo'lsa va shaxsiy chat bo'lsa ishlaydi
+    if message.chat.type == 'private' and admin_mode.get(message.from_user.id):
+        file_id = ""
+        if message.document: file_id = message.document.file_id
+        elif message.video: file_id = message.video.file_id
+        elif message.photo: file_id = message.photo[-1].file_id
+        elif message.audio: file_id = message.audio.file_id
+        elif message.animation: file_id = message.animation.file_id
+        
+        if file_id:
+            await message.reply(f"<code>{file_id}</code>", parse_mode="HTML")
+
 # --- MAJBURIY OBUNA SOZLAMALARI ---
 @dp.message_handler(commands=["setchannel"], user_id=ADMIN_ID)
 async def set_forced_channel(message: types.Message):
@@ -220,6 +253,7 @@ async def start_cmd(message: types.Message):
     
     register_user(message.from_user.id)
     in_ch, in_gr = await check_sub(message.from_user.id)
+    # Link ko'rinishida name {name}
     user_mention = f"<a href='tg://user?id={message.from_user.id}'>{message.from_user.first_name}</a>"
     
     if not in_ch or not in_gr:
@@ -251,17 +285,6 @@ async def private_menus(message: types.Message):
                 f"🔑 Kalit so'zi: `{key_word}`\n\nKalit so'zni shlyapaga yuboring 👇")
         btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga yuborish", url=f"https://t.me/{SHLYAPA_USER}"))
         await message.answer(text, reply_markup=btn, parse_mode="Markdown")
-
-# --- FILE ID OLUVCHI ---
-@dp.message_handler(content_types=['document', 'video', 'photo', 'audio'], user_id=ADMIN_ID)
-async def get_file_id_handler(message: types.Message):
-    if message.chat.type != 'private': return
-    file_id = ""
-    if message.document: file_id = message.document.file_id
-    elif message.video: file_id = message.video.file_id
-    elif message.photo: file_id = message.photo[-1].file_id
-    elif message.audio: file_id = message.audio.file_id
-    if file_id: await message.reply(f"<code>{file_id}</code>", parse_mode="HTML")
 
 # --- CALLBACK HANDLER ---
 @dp.callback_query_handler(lambda c: True)
@@ -330,7 +353,7 @@ async def send_ads(message: types.Message):
         except: continue
     await status_msg.edit_text(f"✅ Yetkazildi: {count}")
 
-# --- WELCOME SOZLASH (TUZATILGAN QISM) ---
+# --- WELCOME SOZLASH (TUZATILGAN VA TO'LIQ) ---
 @dp.message_handler(commands=["setwelcome"])
 async def set_welcome_cmd(message: types.Message):
     # Faqat adminlar ishlata oladi
@@ -338,10 +361,8 @@ async def set_welcome_cmd(message: types.Message):
         member = await message.chat.get_member(message.from_user.id)
         if not member.is_chat_admin(): return
 
-    await message.reply("📥 **Kutib olish xabarini (rasm, video yoki matn) yuboring.**\n\n"
-                        "⚠️ Keyingi yuboradigan xabaringiz ushbu chat uchun welcome sifatida saqlanadi.", parse_mode="Markdown")
+    await message.reply("📥 <b>Welcome xabarini yuboring (rasm, video yoki matn).</b>\n\nFoydalanuvchi ismiga link qo'shish uchun xabar ichida <code>{name}</code> so'zidan foydalaning.", parse_mode="HTML")
     
-    # Keyingi xabarni ushlash uchun vaqtinchalik handler
     dp.register_message_handler(save_welcome_step, 
                                  user_id=message.from_user.id, 
                                  chat_id=message.chat.id, 
@@ -355,7 +376,7 @@ async def save_welcome_step(message: types.Message):
         return 
 
     text = message.caption if message.caption else message.text
-    if not text: text = "Xush kelibsiz, {name}!" 
+    if not text: text = "Xush kelibsiz {name}!" 
     
     f_id = None; f_type = "text"
     if message.photo:
@@ -370,7 +391,7 @@ async def save_welcome_step(message: types.Message):
     save_data(WELCOME_FILE, settings)
     
     dp.message_handlers.unregister(save_welcome_step)
-    await message.reply(f"✅ Ushbu chat uchun yangi {f_type} kutib olish xabari saqlandi.")
+    await message.reply(f"✅ Ushbu chat uchun yangi <b>{f_type}</b> kutib olish xabari saqlandi.", parse_mode="HTML")
 
 # --- YANGI A'ZONI KUTIB OLISH ---
 @dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
@@ -380,6 +401,7 @@ async def welcome_new_member(message: types.Message):
     if chat_id in settings:
         welcome = settings[chat_id]
         text = welcome['text']
+        # Ismni ustiga bossa profilga o'tadigan link
         user_link = f"<a href='tg://user?id={message.new_chat_members[0].id}'>{message.new_chat_members[0].first_name}</a>"
         caption = text.replace("{name}", user_link)
         f_id = welcome.get('file_id')
@@ -403,7 +425,7 @@ async def welcome_new_member(message: types.Message):
         except Exception as e:
             logging.error(f"Welcome error: {e}")
 
-# --- GURUHDAGI HABARLARNI TEKSHIRISH ---
+# --- GURUHDAGI HABARLARNI TEKSHIRISH (MAJBURIY OBUNA) ---
 @dp.message_handler(lambda m: m.chat.type in ['group', 'supergroup'])
 async def check_group_sub(message: types.Message):
     if message.from_user.is_bot: return
