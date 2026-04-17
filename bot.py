@@ -225,11 +225,9 @@ async def start_cmd(message: types.Message):
     
     if not in_ch or not in_gr:
         btn = InlineKeyboardMarkup(row_width=1)
-        # OBUNA TUGMALARI
-        if not in_ch:
-            btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
-        if not in_gr:
-            btn.add(InlineKeyboardButton("👥 Guruhga qo'shilish", url=f"https://t.me/{GROUP[1:]}"))
+        # OBUNA TUGMALARI (Kanal va Guruhni qo'shdik)
+        btn.add(InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"))
+        btn.add(InlineKeyboardButton("👥 Guruhga qo'shilish", url=f"https://t.me/{GROUP[1:]}"))
             
         btn.add(InlineKeyboardButton("✅ Tekshirish", callback_data="check_sub_status"))
         
@@ -313,7 +311,7 @@ async def callback_handler(callback: types.CallbackQuery):
             await callback.message.delete()
             user_link = f"<a href='tg://user?id={callback.from_user.id}'>{callback.from_user.first_name}</a>"
             await bot.send_message(uid, f"Xush kelibsiz {user_link}! ✨\n\nHogvarts olamiga kirishga tayyormisiz? Bo'limni tanlang:", reply_markup=main_menu(), parse_mode="HTML")
-        else: await callback.answer("Hali obuna bo'lmadingiz!", show_alert=True)
+        else: await callback.answer("Hali hamma guruh yoki kanalga obuna bo'lmadingiz!", show_alert=True)
     elif callback.data == "back_to_main":
         await callback.message.delete(); await bot.send_message(uid, "Asosiy menyu:", reply_markup=main_menu())
     elif callback.data == "lang_book_uz":
