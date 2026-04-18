@@ -17,7 +17,6 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 # --- SOZLAMALAR ---
-# Yangi token muvaffaqiyatli joylashtirildi
 API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8754136836:AAE10PBmNVqEYlJqb8gPxqzHey445m0lBKw")
 CHANNEL = "@harry_potter_fans_uz"
 GROUP = "@hogwarts_elite"
@@ -26,16 +25,16 @@ SHLYAPA_USER = "elite_shlyapa"
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
-bot = Bot(token=API_TOKEN, parse_mode="HTML") # Standart HTML rejimi
+bot = Bot(token=API_TOKEN, parse_mode="HTML")
 dp = Dispatcher(bot, storage=storage)
 
 class AdminStates(StatesGroup):
     waiting_for_file = State()
     waiting_for_ad = State()
+    waiting_for_welcome_text = State()
+    waiting_for_welcome_media = State()
 
 # --- MA'LUMOTLAR BAZASI ---
-
-# Alohida tugma uchun "Hammasi birda" fayli
 ALL_IN_ONE_BOOK = {"name": "📚 Hammasi birda (1-7)", "file_id": "BQACAgIAAxkBAAIDvWnOr_Z5zZ9Xj_vOL8p9R-Z8o8aLAAIqAAIx_1lLYm3f_zJ7z5M6BA", "caption": "📚 Garri Potter: Barcha qismlar (1-7) bitta faylda!\n\n📢 Kanal: @harry_potter_fans_uz"}
 
 BOOKS_UZ = [
@@ -104,6 +103,7 @@ HOUSES_DETAILS = {
 HOUSES_FILE = "user_houses.json"
 USERS_FILE = "users_list.json"
 WELCOME_FILE = "welcome_settings.json"
+BANNED_FILE = "banned_users.json"
 
 def load_data(file):
     if os.path.exists(file):
@@ -121,11 +121,15 @@ def get_mention(user):
 
 async def check_sub(user_id):
     try:
+        # User ID orqali kanal va guruhdagi statusini aniq tekshirish
         m_ch = await bot.get_chat_member(CHANNEL, user_id)
         m_gr = await bot.get_chat_member(GROUP, user_id)
         valid = ['member', 'administrator', 'creator']
+        # Ikkala chatda ham status valid bo'lishi kerak
         return (m_ch.status in valid) and (m_gr.status in valid)
-    except: return False
+    except Exception as e:
+        logging.error(f"Tekshiruvda xato: {e}")
+        return False
 
 def main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -133,7 +137,6 @@ def main_menu():
     markup.add(KeyboardButton("🎩 Saralovchi shlyapa"))
     return markup
 
-# --- AVTO-OCHIRISH FUNKSIYASI ---
 async def delete_after_delay(message: types.Message, delay: int):
     await asyncio.sleep(delay)
     try:
@@ -144,13 +147,24 @@ async def delete_after_delay(message: types.Message, delay: int):
 # --- JAZO TIZIMI ---
 @dp.message_handler(commands=["mute", "ban", "unmute"])
 async def handle_punishment(message: types.Message):
+    # Botdan bloklash (Bot Admin paneli uchun)
+    if message.chat.type == 'private' and message.from_user.id == ADMIN_ID:
+        if message.get_command() == "/ban":
+            args = message.get_args()
+            if args:
+                banned = load_data(BANNED_FILE)
+                if isinstance(banned, dict): banned = [] # xavfsizlik uchun
+                banned.append(args)
+                save_data(BANNED_FILE, list(set(banned)))
+                return await message.reply(f"🚫 Foydalanuvchi ({args}) botdan butunlay haydaldi!")
+
     if message.chat.type == 'private': return
     
     sender_id = message.from_user.id
     sender_member = await message.chat.get_member(sender_id)
     
     if not sender_member.is_chat_admin():
-        return await message.reply(f"🧙‍♂️ Kechirasiz {get_mention(message.from_user)}, sizda sehrli tayoqcha 🪄 yo'q! Avval sehrli tayoqchaga ega bo'ling.")
+        return await message.reply(f"🧙‍♂️ Kechirasiz {get_mention(message.from_user)}, sizda sehrli tayoqcha 🪄 yo'q!")
 
     if not message.reply_to_message:
         return await message.reply("⚠️ Sehr ishlatish uchun biror kishiga reply qiling!")
@@ -160,26 +174,31 @@ async def handle_punishment(message: types.Message):
     bot_obj = await bot.get_me()
 
     if target_member.is_chat_admin() or target.id == bot_obj.id:
-        return await message.reply("🧙‍♂️ Kechirasiz, lekin o'zingizni yoki boshqa bir sehrgar adminni jazolash taqiqlangan!")
+        return await message.reply("🧙‍♂️ Sehrgarlar bir-biriga hujum qilmaydi!")
 
     cmd = message.get_command()
     try:
         if cmd == "/ban":
             await message.chat.kick(target.id)
-            await message.answer(f"🚫 {get_mention(target)} ⛓ Hogwarts o'quvchisi yovuz yo'lga kirgani uchun Azkabanga ravona bo'ldi!")
+            await message.answer(f"🚫 {get_mention(target)} Azkabanga ravona bo'ldi!")
         elif cmd == "/mute":
             await message.chat.restrict(target.id, permissions=types.ChatPermissions(can_send_messages=False), until_date=int(time.time())+300)
-            await message.answer(f"🙊 {get_mention(target)} Silencio afsuni ostida! 5 daqiqaga ovozi o'chirildi.")
+            await message.answer(f"🙊 {get_mention(target)} Silencio!")
         elif cmd == "/unmute":
             await message.chat.restrict(target.id, permissions=types.ChatPermissions(can_send_messages=True))
-            await message.answer(f"🔊 {get_mention(target)}dan Silencio afsuni yechildi.")
+            await message.answer(f"🔊 {get_mention(target)}dan afsun yechildi.")
     except Exception as e:
-        await message.reply(f"❌ Sehr amalga oshmadi: {str(e)}")
+        await message.reply(f"❌ Xato: {str(e)}")
 
 # --- START VA TEKSHIRISH ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     user = message.from_user
+    # Ban tekshiruvi
+    banned = load_data(BANNED_FILE)
+    if str(user.id) in str(banned):
+        return await message.answer("Siz Azkabandagi mahbus kabi botdan chetlatilgansiz! ⛓")
+
     users = load_data(USERS_FILE)
     if str(user.id) not in users:
         users[str(user.id)] = user.first_name
@@ -192,18 +211,99 @@ async def start_cmd(message: types.Message):
             InlineKeyboardButton("👥 Guruh", url=f"https://t.me/{GROUP[1:]}"),
             InlineKeyboardButton("✅ Tekshirish", callback_data="recheck_sub")
         )
-        return await message.answer(f"Salom {get_mention(user)}!\n\nBotdan foydalanish uchun kanal va guruhga a'zo bo'ling.", reply_markup=btn)
+        # Atmosferik kutib olish (Majburiy obuna uchun)
+        txt = f"Xush kelibsan, yosh sehrgar {get_mention(user)}! ⚡️\n\nHogwarts darvozalari ochilishi uchun avval quyidagi manzillarda ro'yxatdan o'tishingiz (a'zo bo'lishingiz) kerak. Aks holda, Platforma 9 ¾ ga kira olmaysiz!"
+        return await message.answer(txt, reply_markup=btn)
     
-    await message.answer(f"Salom {get_mention(user)}!\nHogwarts olamiga xush kelibsiz! ✨", reply_markup=main_menu())
+    # Asosiy atmosferik kutib olish
+    welcome_txt = (
+        f"Salom, {get_mention(user)}! Hogwartsga xush kelibsiz! ✨\n\n"
+        "Men sizga sehrli kitoblar va kinolarni topishda yordam beraman. "
+        "Agar hali fakultetingizni bilmasangiz, Saralovchi shlyapa xizmatingizga tayyor! 🎩"
+    )
+    await message.answer(welcome_txt, reply_markup=main_menu())
 
 @dp.callback_query_handler(lambda c: c.data == "recheck_sub")
 async def recheck_callback(callback: types.CallbackQuery):
     is_subscribed = await check_sub(callback.from_user.id)
     if is_subscribed:
         await callback.message.delete()
-        await bot.send_message(callback.message.chat.id, f"Salom {get_mention(callback.from_user)}!\nHogwarts olamiga xush kelibsiz! ✨", reply_markup=main_menu())
+        welcome_txt = f"Ajoyib! Sehrli olam eshiklari siz uchun ochiq, {get_mention(callback.from_user)}! ✨"
+        await bot.send_message(callback.message.chat.id, welcome_txt, reply_markup=main_menu())
     else:
-        await callback.answer("Siz hali ham barcha shartlarni bajarmadingiz! ❌", show_alert=True)
+        await callback.answer("Siz hali ham barcha shartlarni bajarmadingiz! Shoshiling, poyezd yo'lga tushmoqda! 🚂", show_alert=True)
+
+# --- ADMIN FUNKSIYALARI ---
+@dp.message_handler(commands=["getid"], user_id=ADMIN_ID)
+async def get_file_id(message: types.Message):
+    await message.reply("Menga istalgan fayl (rasm, video, mp3...) yuboring, men sizga uning FILE_ID sini beraman:")
+    await AdminStates.waiting_for_file.set()
+
+@dp.message_handler(state=AdminStates.waiting_for_file, content_types=types.ContentTypes.ANY)
+async def process_getid(message: types.Message, state: FSMContext):
+    f_id = None
+    if message.photo: f_id = message.photo[-1].file_id
+    elif message.video: f_id = message.video.file_id
+    elif message.document: f_id = message.document.file_id
+    elif message.audio: f_id = message.audio.file_id
+    elif message.voice: f_id = message.voice.file_id
+    
+    if f_id:
+        await message.answer(f"<code>{f_id}</code>")
+    else:
+        await message.answer("Fayl topilmadi.")
+    await state.finish()
+
+@dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
+async def set_welcome_start(message: types.Message):
+    await message.reply("Guruh uchun yangi kutib olish matnini yuboring:\n(Ism uchun {name} dan foydalaning)")
+    await AdminStates.waiting_for_welcome_text.set()
+
+@dp.message_handler(state=AdminStates.waiting_for_welcome_text)
+async def set_welcome_text(message: types.Message, state: FSMContext):
+    await state.update_data(txt=message.html_text)
+    await message.reply("Endi kutib olish uchun media (rasm yoki video) yuboring, yoki 'yo'q' deb yozing:")
+    await AdminStates.waiting_for_welcome_media.set()
+
+@dp.message_handler(state=AdminStates.waiting_for_welcome_media, content_types=types.ContentTypes.ANY)
+async def set_welcome_finish(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    welcome_db = load_data(WELCOME_FILE)
+    cid = str(message.chat.id)
+    
+    f_id, f_type = None, "text"
+    if message.photo: f_id, f_type = message.photo[-1].file_id, "photo"
+    elif message.video: f_id, f_type = message.video.file_id, "video"
+
+    welcome_db[cid] = {"text": data['txt'], "f_id": f_id, "f_type": f_type}
+    save_data(WELCOME_FILE, welcome_db)
+    await message.answer("✅ Guruh uchun kutib olish sozlandi!")
+    await state.finish()
+
+# --- WELCOME VA AVTO OCHIRISH ---
+@dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
+async def on_new_member(message: types.Message):
+    data = load_data(WELCOME_FILE)
+    cid = str(message.chat.id)
+    bot_info = await bot.get_me()
+    
+    btn = InlineKeyboardMarkup(row_width=2).add(
+        InlineKeyboardButton("📢 Kanalimiz", url=f"https://t.me/{CHANNEL[1:]}"),
+        InlineKeyboardButton("🎩 Fakultet tanlash", url=f"https://t.me/{bot_info.username}?start=sorting")
+    )
+    
+    for user in message.new_chat_members:
+        mention = get_mention(user)
+        if cid in data:
+            conf = data[cid]
+            cap = conf['text'].replace("{name}", mention)
+            if conf['f_type'] == "photo": 
+                m = await bot.send_photo(cid, conf['f_id'], caption=cap, reply_markup=btn)
+            elif conf['f_type'] == "video": 
+                m = await bot.send_video(cid, conf['f_id'], caption=cap, reply_markup=btn)
+            else: 
+                m = await bot.send_message(cid, cap, reply_markup=btn)
+            asyncio.create_task(delete_after_delay(m, 600))
 
 # --- KITOBLAR VA KINOLAR ---
 @dp.message_handler(lambda m: m.text == "📚 Kitoblar")
@@ -286,7 +386,7 @@ async def sorting_hat(message: types.Message):
 # --- ADMIN PANEL ---
 @dp.message_handler(commands=["admins"], user_id=ADMIN_ID)
 async def admin_panel(message: types.Message):
-    txt = ("🧙‍♂️ <b>Admin Panel:</b>\n\n/send - Reklama\n/getid - Fayl ID\n/ban - Azkaban\n/mute - Silencio")
+    txt = ("🧙‍♂️ <b>Admin Panel:</b>\n\n/send - Reklama\n/getid - Fayl ID olish\n/setwelcome - Guruhni sozlash\n/ban [ID] - Botdan bloklash")
     await message.answer(txt)
 
 @dp.message_handler(commands=["send"], user_id=ADMIN_ID)
@@ -305,29 +405,6 @@ async def ad_process(message: types.Message, state: FSMContext):
         except: pass
     await message.answer(f"✅ Xabar {count} kishiga yuborildi.")
     await state.finish()
-
-# --- WELCOME VA AVTO OCHIRISH ---
-@dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
-async def on_new_member(message: types.Message):
-    data = load_data(WELCOME_FILE)
-    cid = str(message.chat.id)
-    btn = InlineKeyboardMarkup(row_width=2).add(
-        InlineKeyboardButton("📢 Kanal", url=f"https://t.me/{CHANNEL[1:]}"),
-        InlineKeyboardButton("🎩 Fakultet", url=f"https://t.me/{SHLYAPA_USER}?start=sorting")
-    )
-    for user in message.new_chat_members:
-        mention = get_mention(user)
-        if cid in data:
-            conf = data[cid]
-            cap = conf['text'].replace("{name}", mention)
-            if conf['f_type'] == "photo": 
-                m = await bot.send_photo(cid, conf['f_id'], caption=cap, reply_markup=btn)
-            elif conf['f_type'] == "video": 
-                m = await bot.send_video(cid, conf['f_id'], caption=cap, reply_markup=btn)
-            else: 
-                m = await bot.send_message(cid, cap, reply_markup=btn)
-            
-            asyncio.create_task(delete_after_delay(m, 600))
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
