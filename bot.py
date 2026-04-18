@@ -49,7 +49,6 @@ BOOKS_UZ = [
     {"name": "📖 9. La'natlangan bola 2", "file_id": "BQACAgIAAxkBAAIMcWnjRJdRRTbQJwABUlIFzTOmhHJx1AACrAIAAi1ZKUi4zsBEGFhMPjsE", "caption": "📖 Nomi: Garri Potter va Laʼnatlangan bola 2 \n\n📢 Kanal: @harry_potter_fans_uz"},
 ]
 
-
 BOOKS_EN = [
     {"name": "📖 1. Philosopher's Stone", "file_id": "BQACAgUAAxkBAAIDOWnOk3dbX8E-yaAVFy_xfeP6IqKGAAL_AwACn_N4VR4lpjl-n1tZOgQ", "caption": "📖 Name: Harry Potter 1\n📢 Channel: @harry_potter_fans_uz"},
     {"name": "📖 2. Chamber of Secrets", "file_id": "BQACAgUAAxkBAAIDO2nOk9iTjQ_vULXaRoo7BPiFoyESAAMEAAKf83hV774CCp3aF146BA", "caption": "📖 Name: Harry Potter 2\n📢 Channel: @harry_potter_fans_uz"},
@@ -91,7 +90,7 @@ MOVIES_EN = [
     {"name": "🎬 5. Order of the Phoenix", "file_id": "BAACAgQAAxkBAAIDYWnOl1-UJIPeUi9iwkH5xveOb1cBAAKVBwACrMaBUC7iNQH-PQokOgQ", "caption": "🎬 Name: HP 5: Order of the Phoenix\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
     {"name": "🎬 6. Half-Blood Prince", "file_id": "BAACAgQAAxkBAAIDY2nOl28ipXgwucm7uiCsJ00NrHObAAKNCAACqwKBUHgSmGHyOYgROgQ", "caption": "🎬 Name: HP 6: Half-Blood Prince\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
     {"name": "🎬 7. Deathly Hallows 1", "file_id": "BAACAgQAAxkBAAIDZWnOl36nQLjV7TlugAMlJE6y1xFKAAKXCAACqwKBUMiAIxlbsJmOOgQ", "caption": "🎬 Name: HP 7: Deathly Hallows 1\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
-    {"name": "🎬 8. Deathly Hallows 2", "file_id": "BAACAgQAAxkBAAIDZ2nOl41aUWcgKRzzP_r-suInRRSKAAKkCAACqwKBUC733-s2FjB3OgQ", "caption": "🎬 Name: HP 8: Deathly Hallows 2\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
+    {"name": "🎬 8. Deathly Hallows 2", "file_id": "BAACAgQAAxkBAAIDZ2nOl41aUWcgKRzzP_r-suInRRSKAAKkCAACqwKBU733-s2FjB3OgQ", "caption": "🎬 Name: HP 8: Deathly Hallows 2\n⏱ Time: 2.5 hours\n🌐 Lang: English\n🎞 Quality: HD\n📢 Channel: @harry_potter_fans_uz"},
 ]
 
 HOUSES_DETAILS = {
@@ -228,10 +227,25 @@ async def handle_punishment(message: types.Message):
     except Exception as e:
         await message.reply(f"❌ Xato: {str(e)}")
 
-# --- START VA TEKSHIRISH ---
+# --- START VA TEKSHIRISH (TO'G'RILANDI) ---
 @dp.message_handler(commands=["start"])
 async def start_cmd(message: types.Message):
     user = message.from_user
+    
+    # --- GURUH UCHUN MAXSUS QISM ---
+    if message.chat.type != 'private':
+        bot_info = await bot.get_me()
+        btn = InlineKeyboardMarkup().add(
+            InlineKeyboardButton("🏰 Shaxsiy chatga o'tish", url=f"https://t.me/{bot_info.username}?start=start")
+        )
+        txt = (
+            f"Hurmatli yosh sehrgar {get_mention(user)}! ⚡️\n\n"
+            "Sehrli menyulardan foydalanish uchun men bilan <b>shaxsiy chatda</b> suhbatlashishingizni so'rayman. "
+            "Guruhda xalaqit bermaslik uchun menyularni shu yerda ochamiz! 🤫"
+        )
+        return await message.reply(txt, reply_markup=btn)
+    # --- GURUH QISMI TUGADI ---
+
     banned = load_data(BANNED_FILE)
     if str(user.id) in str(banned):
         return await message.answer("Siz Azkabandagi mahbus kabi botdan chetlatilgansiz! ⛓")
