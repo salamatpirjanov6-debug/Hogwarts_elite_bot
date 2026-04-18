@@ -46,7 +46,7 @@ BOOKS_UZ = [
     {"name": "📖 6. Chalazot shaxzoda", "file_id": "BQACAgIAAxkBAANracuwqVy7l3UaOeEsHvDN8DYyYK4AApIAAzXcUEotF3tao-vWxToE", "caption": "📖 Nomi: Garri Potter va Chalazot shahzoda\n\n📢 Kanal: @harry_potter_fans_uz"},
     {"name": "📖 7. Ajal tuhfalari", "file_id": "BQACAgIAAxkBAANtacuwwS1FlLl5SubbQJDSn6ghyyoAAg8CAAKpCIBJRzBcQ4IMdzA6BA", "caption": "📖 Nomi: Garri Potter va Ajal tuhfalari 1\n\n📢 Kanal: @harry_potter_fans_uz"},
     {"name": "📖 8. La'natlangan bola", "file_id": "BQACAgIAAxkBAAIDRWnOlEOi6oyRRafs-Y9Yl1Lo19fjAAL8AwACn_N4VdOVKXxjV5MlOgQ", "caption": "📖 Nomi: Garri Potter va Ajal tuhfalari 2\n\n📢 Kanal: @harry_potter_fans_uz"},
-    "name": "📖 9. La'natlangan bola 2", "file_id": "BQACAgIAAxkBAAIDRWnOlEOi6oyRRafs-Y9Yl1Lo19fjAAL8AwACn_N4VdOVKXxjV5MlOgQ", "caption": "📖 Nomi: Garri Potter va Ajal tuhfalari 2\n\n📢 Kanal: @harry_potter_fans_uz"},
+    {"name": "📖 9. La'natlangan bola 2", "file_id": "BQACAgIAAxkBAAIDRWnOlEOi6oyRRafs-Y9Yl1Lo19fjAAL8AwACn_N4VdOVKXxjV5MlOgQ", "caption": "📖 Nomi: Garri Potter va Ajal tuhfalari 2\n\n📢 Kanal: @harry_potter_fans_uz"},
 ]
 ]
 
