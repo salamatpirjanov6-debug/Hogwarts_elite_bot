@@ -429,7 +429,7 @@ async def sorting_hat(message: types.Message):
     await asyncio.sleep(2)
     
     final_text = (f"{h['txt']}\n\n✨ <b>Hamma narsa ayon!</b> ✨\n\nFakultetingiz: {h['emoji']} <b>{data[uid]}</b>\n🔑 Kalit so'z: <code>{h['kalit']}</code>\n\nKalit so'zni shlyapaga yuboring 👇")
-    btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga borish", {SHLYAPA_USER}"))
+    btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga borish",url=f{SHLYAPA_USER}"))
     await msg.edit_text(final_text, reply_markup=btn)
 
 # --- ADMIN PANEL ---
