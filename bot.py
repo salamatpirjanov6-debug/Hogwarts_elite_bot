@@ -17,7 +17,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 # --- SOZLAMALAR ---
-API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8754136836:AAE10PBmNVqEYlJqb8gPxqzHey445m0lBKw")
+API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8679378410:AAGPBLgayAH0psOVxMf10OdLDWw5jUL0j-E")
 CHANNEL = "@harry_potter_fans_uz"
 GROUP = "@hogwarts_elite"
 ADMIN_ID = 7821230725
