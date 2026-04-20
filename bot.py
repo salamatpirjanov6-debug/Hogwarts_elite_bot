@@ -21,7 +21,7 @@ API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8679378410:AAGPBLgayAH0psOVxMf
 CHANNEL = "@SaIamatPirjanov"
 GROUP = "@SalamatPirjanov_chat"
 ADMIN_ID = 7821230725
-SHLYAPA_USER = "@8032130299"
+SHLYAPA_USER = "SalamatPirjanov"
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
