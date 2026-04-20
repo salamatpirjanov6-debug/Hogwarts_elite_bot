@@ -305,7 +305,7 @@ async def process_getid(message: types.Message, state: FSMContext):
 
 @dp.message_handler(commands=["setwelcome"], user_id=ADMIN_ID)
 async def set_welcome_start(message: types.Message):
-    await message.reply("Guruh uchun yangi kutib olish matnini yuboring:\n(Ism uchun {name} dan foydalaning)")
+    await message.reply("Guruh uchun yangi kutib olish matnini yuboring:\n(Ism uchun {name} dan foydaning)")
     await AdminStates.waiting_for_welcome_text.set()
 
 @dp.message_handler(state=AdminStates.waiting_for_welcome_text)
@@ -428,9 +428,18 @@ async def sorting_hat(message: types.Message):
     msg = await message.answer("🧐 <b>O'ylayapman...</b>")
     await asyncio.sleep(2)
     
-    final_text = (f"{h['txt']}\n\n✨ <b>Hamma narsa ayon!</b> ✨\n\nFakultetingiz: {h['emoji']} <b>{data[uid]}</b>\n🔑 Kalit so'z: <code>{h['kalit']}</code>\n\nKalit so'zni shlyapaga yuboring 👇")
-    btn = InlineKeyboardMarkup().add(InlineKeyboardButton("🎩 Shlyapaga borish",url=f{SHLYAPA_USER}"))
-    await msg.edit_text(final_text, reply_markup=btn)
+    final_text = (
+        f"{h['txt']}\n\n✨ <b>Hamma narsa ayon!</b> ✨\n\n"
+        f"Fakultetingiz: {h['emoji']} <b>{data[uid]}</b>\n"
+        f"🔑 Kalit so'z: <code>{h['kalit']}</code>\n\n"
+        f"Kalit so'zni shlyapaga yuboring 👇"
+    )
+    
+    shlyapa_btn = InlineKeyboardMarkup().add(
+        InlineKeyboardButton("🎩 Shlyapaga borish", url=f"https://t.me/{SHLYAPA_USER}")
+    )
+    
+    await msg.edit_text(final_text, reply_markup=shlyapa_btn)
 
 # --- ADMIN PANEL ---
 @dp.message_handler(commands=["admins"], user_id=ADMIN_ID)
