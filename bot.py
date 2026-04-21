@@ -17,7 +17,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 # --- SOZLAMALAR ---
-API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8679378410:AAGPBLgayAH0psOVxMf10OdLDWw5jUL0j-E")
+API_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8669459130:AAEiW8ZLeYNuITToXN9vCURiQdS3u5o_r_U")
 CHANNEL = "@SaIamatPirjanov"
 GROUP = "@SalamatPirjanov_chat"
 ADMIN_ID = 7821230725
